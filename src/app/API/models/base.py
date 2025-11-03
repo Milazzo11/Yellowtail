@@ -60,6 +60,8 @@ ID_STORE_TOGGLE = True
 # specifies whether IDs are temporarily stored to fully prevent replay attacks
 # (set to False for a stateless system; security risk is low)
 
+STATE_CLEANUP_INTERVAL = 10
+
 
 
 T = TypeVar("T")
@@ -71,7 +73,7 @@ T = TypeVar("T")
 
 id_store = {}
 store_lock = Lock()  # To handle concurrency
-next_cleanup = time.time() + TIMESTAMP_ERROR
+next_cleanup = time.time() + STATE_CLEANUP_INTERVAL
 
 
 
@@ -162,7 +164,7 @@ class Auth(BaseModel, Generic[T]):
                     for key in to_delete:
                         del id_store[key]
 
-                    next_cleanup = now + TIMESTAMP_ERROR
+                    next_cleanup = now + STATE_CLEANUP_INTERVAL
 
         challenge_verif(self.data)
 
