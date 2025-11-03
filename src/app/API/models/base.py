@@ -52,10 +52,8 @@ T = TypeVar("T")
 
 
 
-ID_STORE_TOGGLE = False
+ID_STORE_TOGGLE = True
 # specifies whether IDs are temporarily stored to fully prevent replay attacks
-# (this feature WILL NOT WORK with scaled replicas)
-## TODO * maybe eventually move this to general config options file
 
 
 id_store = {}

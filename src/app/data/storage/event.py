@@ -74,7 +74,7 @@ def load_full(event_id: str, issue: bool) -> dict:###<-this funtionality will pr
                 AND issued < tickets
             RETURNING *
         """, (event_id,))
-        # issue a new ticket before loading data for new registrations     
+        # issue a new ticket before loading data for new registrations
 
     else:
         cursor.execute("SELECT * FROM events WHERE id = ?", (event_id,))
@@ -148,7 +148,7 @@ def create(event: dict, event_data: dict) -> None:
     """
 
     # Create redeemed bitstring (all tickets start unredeemed)
-    redeemed_bitstring = b'\x00' * (event["tickets"] // BYTE_SIZE + 1)  # Create a bytes object of size `tickets`
+    data_bytes = b'\x00' * event["tickets"] # Create a bytes object of size `tickets`
 
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -161,14 +161,13 @@ def create(event: dict, event_data: dict) -> None:
 
     # Insert into event_data table
     cursor.execute("""
-        INSERT INTO event_data (event_id, event_key, owner_public_key, returned, redeemed_bitstring)
-        VALUES (:event_id, :event_key, :owner_public_key, :returned, :redeemed_bitstring)
+        INSERT INTO event_data (event_id, event_key, owner_public_key, data_bytes)
+        VALUES (:event_id, :event_key, :owner_public_key, :data_bytes)
         """, {
             "event_id": event["id"],
             "event_key": event_data["event_key"],
             "owner_public_key": event_data["owner_public_key"],
-            "returned": pickle.dumps(event_data["returned"]),
-            "redeemed_bitstring": redeemed_bitstring,
+            "data_bytes": data_bytes,
         }
     )
 

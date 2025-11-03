@@ -108,42 +108,52 @@ def reissue(event_id: str, ticket_number: int, version: int) -> None:
 
 
 
+REDEEMED_BYTE = 255
+
 def verify(event_id: str, ticket_number: int) -> bool:
     """
-    Verifies ticket redemption
+    Verifies ticket redemption: return True if redeemed, else False.
     """
-
     conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    res = _redeem_check(cursor)
+    cur = conn.cursor()
 
+    # Read exactly one byte (SQLite substr is 1-based)
+    cur.execute("""
+        SELECT substr(data_bytes, ?, 1)
+        FROM event_data
+        WHERE event_id = ?
+    """, (ticket_number + 1, event_id))
+    row = cur.fetchone()
     conn.close()
-    return res
+
+    # If row exists, row[0] is a bytes object of length 1
+    return row[0][0] == REDEEMED_BYTE
+
 
 
 def redeem(event_id: str, ticket_number: int) -> bool:
     """
-    Alter the redemption bitstring for the associated ticket number bit to reflect a redemption.
+    Mark the ticket as redeemed (set its byte to 0xFF) only if not already redeemed.
 
-    :returns: True if ticket has been redeemed before, false if this is a new redemption
+    :returns: True if this is a new redemption, False if it had been redeemed before.
     """
-
     conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()##this will be in basefile
+    cur = conn.cursor()
 
-    if _redeem_check(event_id, ticket_number):
-        return False
-
-    # Mark the ticket as redeemed (set the bit at the ticket number index to 1)
-    redeemed_bitstring[ticket_number // BYTE_SIZE] |= mask
-
-    # Update the database with the new redeemed bitstring
-    cursor.execute("""
+    # Splice in a single byte (0xFF) only if the current byte is not already 0xFF.
+    # If another writer redeems concurrently, this UPDATE affects 0 rows and we return False.
+    cur.execute("""
         UPDATE event_data
-        SET redeemed_bitstring = ?
-        WHERE event_id = ?
-    """, (bytes(redeemed_bitstring), event_id))
+           SET data_bytes =
+                substr(data_bytes, 1, ?) || x'FF' || substr(data_bytes, ? + 2)
+         WHERE event_id = ?
+           AND substr(data_bytes, ?, 1) <> x'FF'
+    """, (ticket_number, ticket_number, event_id, ticket_number + 1))
 
-    conn.commit()
+    changed = (cur.rowcount == 1)
+
+    if changed:
+        conn.commit()
+
     conn.close()
-    return True
+    return changed
