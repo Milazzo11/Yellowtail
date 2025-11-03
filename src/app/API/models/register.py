@@ -7,9 +7,17 @@ from typing import Optional, List
 
 from app.data.ticket import Ticket
 
+
+
+class Verification(BaseModel):
+    event_id: str = Field(..., description="ID of event to register for")
+    public_key: str = Field(..., description="Public key of user registering")
+    metadata: Optional[str] = Field(None, description="Custom ticket metadata")
+
+
 class RegisterRequest(BaseModel):
     event_id: str = Field(..., description="ID of event to register for")
-    verification: Optional[Auth[str]] = Field(None, description="Verification for non-public/paid events (any ticket metadata signed by event owner)")
+    verification: Optional[Auth[Verification]] = Field(None, description="Verification for non-public/paid events")
 
     def to_dict(self) -> dict:
 
@@ -33,6 +41,7 @@ class RegisterResponse(BaseModel):
         """
 
         event_data = EventData.load(request.event_id)
+        metadata = None
 
         if event_data.event.private:
             if request.verification is None:
@@ -41,12 +50,18 @@ class RegisterResponse(BaseModel):
             if request.verification.public_key != event_data.data.owner_public_key:
                 raise HTTPException(status_code=401, detail="Authorization key incorrect")
             
-            ###if request.verification.unwrap() != public_key:
-            ###    raise HTTPException(status_code=401, detail="Authorization for incorrect key")
+            verif_data = request.verification.unwrap()
+
+            if verif_data.event_id != request.event_id:
+                raise HTTPException(status_code=401, detail="Authorization for incorrect event")
+            
+            if verif_data.public_key != public_key:
+                raise HTTPException(status_code=401, detail="Authorization for incorrect key")
 
             request.verification.authenticate()
+            metadata = verif_data.metadata
             
-        ticket = Ticket.register(request.event_id, public_key, metadata=request.verification.unwrap())
+        ticket = Ticket.register(request.event_id, public_key, metadata=metadata)
         ticket = ticket.pack()
 
         return self(ticket=ticket)
