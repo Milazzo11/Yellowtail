@@ -14,7 +14,7 @@ BYTE_SIZE = 8
 # assumed byte size (in bits)
 
 
-REDEEMED_BYTE = 2 ** BYTE_SIZE - 1
+REDEEMED_BYTE = 2 ** (BYTE_SIZE - 1) # high order bit
 
 ## TODO* maybe make byte size global
 
@@ -30,9 +30,34 @@ REDEEMED_BYTE = 2 ** BYTE_SIZE - 1
 
 
 
+## TODO - now that text factory bytes is set, this fucking bs isnt needed
+def _parse_row_byte(row):
+    print("new vers")
+    
+    cell = row[0]
 
+    if cell is None:
+        raise Exception("Data not found")
 
+    # Already a raw int (SQLite optimizes 1-byte blobs sometimes)
+    if isinstance(cell, int):
+        return cell
 
+    
+    # # Text like "☺" -> convert 1:1 to byte → int
+    # elif isinstance(cell, str):
+    #     if not cell:
+    #         raise Exception("Data not found")
+
+    #     return cell.encode("latin1")[0]
+
+    # bytes, bytearray, memoryview
+    else:
+        b = bytes(cell)
+        if not b:
+            raise Exception("Data not found")
+
+        return b[0]
 
 
 
@@ -47,6 +72,7 @@ def transfer_valid_check(event_id: str, ticket_number: int, version: int) -> boo
 
     conn = sqlite3.connect(DB_FILE)
     cur = conn.cursor()
+    conn.text_factory = bytes
 
     # Read exactly one byte (SQLite substr is 1-based)
     cur.execute("""
@@ -57,8 +83,12 @@ def transfer_valid_check(event_id: str, ticket_number: int, version: int) -> boo
     row = cur.fetchone()
     conn.close()
 
-    # If row exists, row[0] is a bytes object of length 1
-    return row[0][0] == version
+    
+    db_version = _parse_row_byte(row)
+    print("db version", db_version)
+    print("tick version", version)
+
+    return (db_version == version) or ((db_version - REDEEMED_BYTE) == version)
 
 
 
@@ -73,6 +103,7 @@ def reissue(event_id: str, ticket_number: int, version: int) -> bool:
 
     conn = sqlite3.connect(DB_FILE)
     cur = conn.cursor()
+    conn.text_factory = bytes
 
     cur.execute("""
         UPDATE event_data
@@ -105,6 +136,7 @@ def verify(event_id: str, ticket_number: int) -> bool:
     """
     conn = sqlite3.connect(DB_FILE)
     cur = conn.cursor()
+    conn.text_factory = bytes
 
     # Read exactly one byte (SQLite substr is 1-based)
     cur.execute("""
@@ -115,12 +147,14 @@ def verify(event_id: str, ticket_number: int) -> bool:
     row = cur.fetchone()
     conn.close()
 
+    redemption_code = _parse_row_byte(row)
+
     # If row exists, row[0] is a bytes object of length 1
-    return row[0][0] == REDEEMED_BYTE
+    return redemption_code >= REDEEMED_BYTE
 
 
 
-def redeem(event_id: str, ticket_number: int) -> bool:
+def redeem(event_id: str, ticket_number: int, version: int) -> bool:
     """
     Mark the ticket as redeemed (set its byte to 0xFF) only if not already redeemed.
 
@@ -128,16 +162,26 @@ def redeem(event_id: str, ticket_number: int) -> bool:
     """
     conn = sqlite3.connect(DB_FILE)
     cur = conn.cursor()
+    conn.text_factory = bytes
+
+    new_byte = bytes([version | REDEEMED_BYTE])
 
     # Splice in a single byte (0xFF) only if the current byte is not already 0xFF.
     # If another writer redeems concurrently, this UPDATE affects 0 rows and we return False.
     cur.execute("""
         UPDATE event_data
-           SET data_bytes =
-                substr(data_bytes, 1, ?) || x'FF' || substr(data_bytes, ? + 2)
-         WHERE event_id = ?
-           AND substr(data_bytes, ?, 1) <> x'FF'
-    """, (ticket_number, ticket_number, event_id, ticket_number + 1))
+            SET data_bytes =
+                substr(data_bytes, 1, ?) || ? || substr(data_bytes, ?)
+        WHERE event_id = ?
+            AND CAST(('0x' || HEX(substr(data_bytes, ?, 1))) AS INTEGER) < ?
+    """, (
+        ticket_number,
+        new_byte,
+        ticket_number + 2,
+        event_id,
+        ticket_number + 1,
+        REDEEMED_BYTE
+    ))
 
     changed = (cur.rowcount == 1)
 

@@ -21,11 +21,11 @@ class VerifyResponse(BaseModel):
     metadata: Optional[str] = Field(None, description="Ticket metadata")
 
     @classmethod
-    def generate(self, request: VerifyRequest, public_key: str) -> "VerifyResponse":
+    def generate(self, request: VerifyRequest) -> "VerifyResponse":
         """
         """
 
-        ticket = Ticket.load(request.event_id, public_key, request.ticket)
+        ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
         verification = ticket.verify()
 
         return self(verification=verification, metadata=ticket.metadata)

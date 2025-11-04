@@ -13,6 +13,9 @@ class Transfer(BaseModel):
     ticket: str = Field(..., description="Ticket being transferred")
     transfer_public_key: str = Field(..., description="Public key of the new ticket owner (user making request)")
 
+    def to_dict(self) -> dict:
+        return self.__dict__
+
 
 class TransferRequest(BaseModel):
     event_id: str = Field(..., description="ID of the event for which the ticket is being transferred")
@@ -42,8 +45,9 @@ class TransferResponse(BaseModel):
         old_ticket = Ticket.load(request.event_id, request.transfer.public_key, transfer_data.ticket)
         request.transfer.authenticate()
 
-        new_ticket = Ticket.register(
-            request.event_id, public_key, number=old_ticket.number
+        new_ticket = Ticket.reissue(
+            request.event_id, public_key, number=old_ticket.number,
+            version=old_ticket.version, metadata=old_ticket.metadata
         )
         ticket = new_ticket.pack()
 

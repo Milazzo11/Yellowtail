@@ -52,7 +52,7 @@ def redeem_ticket(data: Auth[RedeemRequest]) -> Auth[RedeemResponse]:
 
 def verify_redemption(data: Auth[VerifyRequest]) -> Auth[VerifyResponse]:
     request = data.authenticate()
-    response = VerifyResponse.generate(request, data.public_key)
+    response = VerifyResponse.generate(request)
 
     packet = Data[VerifyResponse].load(response)
     return Auth[VerifyResponse].load(packet)

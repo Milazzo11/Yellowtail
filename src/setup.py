@@ -64,6 +64,9 @@ def db_setup() -> None:
     Set up the database schema for storing events and their data.
     """
     try:
+        if os.path.exists(DB_FILE):
+            os.remove(DB_FILE)
+
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         

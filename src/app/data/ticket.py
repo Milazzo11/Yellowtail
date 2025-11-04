@@ -49,14 +49,16 @@ class Ticket(BaseModel):
     ### TODO * PROBABLY split into register/reissue?
     @classmethod
     def reissue(
-        self, event_id: str, public_key: str, number: int, version = int,
+        self, event_id: str, public_key: str, number: int, version: int,
         metadata: Optional[str] = None
     ) -> "Ticket":
         """
         """
 
         event_data = EventData.load(event_id)
-        ticket_db.reissue(event_id, number, version)
+        
+        if not ticket_db.reissue(event_id, number, version):
+            raise HTTPException(status_code=400, detail="Ticket transfer failed (outdated versions and redeemed tickets cannot be transferred)")
             ### TODO* reissue increments transfer number
             ### prob change name to transfer
 
@@ -94,12 +96,13 @@ class Ticket(BaseModel):
             decrypted_ticket_raw = cipher.decrypt(ticket)
             decrypted_ticket = json.loads(decrypted_ticket_raw)
             ticket_data = decrypted_ticket["ticket"]
+            ticket_string_raw = json.dumps(ticket_data)
             
-            if hash.generate(decrypted_ticket) != decrypted_ticket["hash"]:
+            if hash.generate(ticket_string_raw) != decrypted_ticket["hash"]:
                 raise Exception
                 # go to "except" block
         
-        except:
+        except Exception:
             raise HTTPException(status_code=401, detail="Ticket verification failed")
             ## TODO - this is here and general to prevent padding oracle attack
 
@@ -129,12 +132,12 @@ class Ticket(BaseModel):
         """
         """
 
-        if not ticket_db.redeem(self.event_id, self.number):
+        if not ticket_db.redeem(self.event_id, self.number, self.version):
             raise HTTPException(400, detail="Ticket has already been redeemed")
         
 
     def verify(self):
-        return ticket_db.redeem(self.event_id, self.number)
+        return ticket_db.verify(self.event_id, self.number)
 
 
     def pack(self) -> str:
@@ -157,7 +160,7 @@ class Ticket(BaseModel):
         ticket_string_hash = hash.generate(ticket_string_raw)
 
         verif_data = {
-            "ticket": ticket_string_raw,
+            "ticket": ticket_data,
             "hash": ticket_string_hash
         }
         verif_data_str = json.dumps(verif_data)

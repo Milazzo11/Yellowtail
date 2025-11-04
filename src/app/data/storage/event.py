@@ -4,9 +4,10 @@
 
 import sqlite3
 import pickle
-from typing import List
+from typing import List, Optional
 
 from config import DB_FILE
+from fastapi import HTTPException
 
 
 
@@ -18,10 +19,12 @@ BYTE_SIZE = 8
 ### all of these should be simple SQL queries (complex logic happens outside this module)
 
 
-#### TODO - I don't think using "event" and data objects here makes sense -- that logic can be dealt with at the obj level
+## TODO* look into possibly renaming some of these functions
 
 
-def load(event_id: str) -> dict:###<-this funtionality will probably need to be split up
+
+
+def load(event_id: str) -> Optional[dict]:###<-this funtionality will probably need to be split up
     """
     Load an event given an event ID.
 
@@ -40,15 +43,17 @@ def load(event_id: str) -> dict:###<-this funtionality will probably need to be 
 
     print(event_row)
 
-    columns = [desc[0] for desc in cursor.description]
+    if event_row is None:
+        conn.close()
+        return None
 
+    columns = [desc[0] for desc in cursor.description]
     conn.close()
 
-    
     return dict(zip(columns, event_row))
 
 
-def load_full(event_id: str, issue: bool) -> dict:###<-this funtionality will probably need to be split up
+def load_full(event_id: str, issue: bool) -> Optional[dict]:###<-this funtionality will probably need to be split up
     """
     Load an event and associated data (besides redemption and storage bitstrings).
 
@@ -80,6 +85,11 @@ def load_full(event_id: str, issue: bool) -> dict:###<-this funtionality will pr
         cursor.execute("SELECT * FROM events WHERE id = ?", (event_id,))
     
     event_row = cursor.fetchone()
+
+    if event_row is None:
+        conn.commit()
+        return None
+
     event_columns = [desc[0] for desc in cursor.description]
 
     # Fetch event data

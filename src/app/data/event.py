@@ -75,6 +75,10 @@ class Event(BaseModel):
         """
         
         dict = event_db.load(event_id)
+
+        if dict is None:
+            raise HTTPException(status_code=404, detail="Event with associated ID not found")
+
         return self.from_dict(dict)
 
 
@@ -101,9 +105,6 @@ class Event(BaseModel):
         """
         """
 
-        if self.issued > self.tickets:
-            raise HTTPException(status_code=401, detail="All tickets registered")
-        
         return self.issued - 1
 
 
@@ -125,8 +126,13 @@ class EventData(BaseModel):
 
         dict = event_db.load_full(event_id, issue=issue)
 
-        print(dict)
+        
+        if dict is None:
+            if issue:
+                raise HTTPException(status_code=410, detail="All tickets registered")
 
+            raise HTTPException(status_code=404, detail="Event with associated ID not found")
+        
         return self(
             event=Event.from_dict(dict["event"]),
             data=Data.from_dict(dict["data"])

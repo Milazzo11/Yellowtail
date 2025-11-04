@@ -42,5 +42,5 @@ class SearchResponse(BaseModel):
 
     def to_dict(self) -> dict:
         return {
-            "events": [event.to_dict() for event in self.events]
+            "events": [e.to_dict() for e in self.events]
         }
