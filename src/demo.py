@@ -63,13 +63,10 @@ def parse_res(res):
 
 
 
-def main():
-    """
-    """
 
-    print("ZETA demo!")
-    print("PRESS ENTER TO START")
-    input("> ")
+def scenario_1():
+    """
+    """
 
     print("\nBeverly creates a new event: \"Tea Party\"")
     input("> ")
@@ -83,10 +80,10 @@ def main():
             event=Event(
                 name="Tea Party",
                 description="Tea, earl grey, hot",
-                tickets=1,
+                tickets=16,
                 start=time.time(),
                 end=time.time() + 2_628_00,
-                private=False,
+                private=False
             )
         ),
         beverly_private_key,
@@ -186,7 +183,29 @@ def main():
     res = requests.post(SERVER_URL + "/redeem", json=req)
     parse_res(res)
 
-    #### TODO - jean-luc attempts to transfer his ticket to Goerdi again (failure)
+    print("\nWhat about if he tries to transfer Geordi his ticket for a second time?\n")
+
+    transfer = auth_req(
+        Transfer(
+            ticket=jean_luc_ticket,
+            transfer_public_key=geordi_public_key
+        ),
+        jean_luc_private_key,
+        jean_luc_public_key,
+        Transfer
+    )
+
+    req = auth_req(
+        TransferRequest(
+            event_id=event_id,
+            transfer=transfer
+        ),
+        geordi_private_key,
+        geordi_public_key,
+        TransferRequest
+    ).to_dict()
+    res = requests.post(SERVER_URL + "/transfer", json=req)
+    parse_res(res)
 
     #####
 
@@ -222,10 +241,23 @@ def main():
     res = requests.post(SERVER_URL + "/redeem", json=req)
     parse_res(res)
 
+    req = auth_req(
+        VerifyRequest(
+            event_id=event_id,
+            ticket=geordi_ticket,
+            check_public_key=geordi_public_key
+        ),
+        beverly_private_key,
+        beverly_public_key,
+        VerifyRequest
+    ).to_dict()
+    res = requests.post(SERVER_URL + "/verify", json=req)
+    parse_res(res)
+
     #####
 
     print("\nThis is unsuccessful, however, and Geordi now needs to provide his signature to proceed with redemption")
-    print("> ")
+    input("> ")
 
     req = auth_req(
         RedeemRequest(
@@ -253,22 +285,139 @@ def main():
     ).to_dict()
     res = requests.post(SERVER_URL + "/verify", json=req)
     parse_res(res)
-    ## TODO - failing bc version is "redeemed"
-    ## ok so we fucked up chat... we still need version data after redemption... so the last bit will justb be that
 
     #####
 
-    ## Jean-Luc tries verif with his ticket (fails)
+    print("\nLater on, Jean-Luc asks Beverly to attempt a verification with his outdated ticket\n")
 
-    ## Deanna creates a new event (group counseling session)
+    req = auth_req(
+        VerifyRequest(
+            event_id=event_id,
+            ticket=jean_luc_ticket,
+            check_public_key=jean_luc_public_key
+        ),
+        beverly_private_key,
+        beverly_public_key,
+        VerifyRequest
+    ).to_dict()
+    res = requests.post(SERVER_URL + "/verify", json=req)
+    parse_res(res)
+
+    print("/n... which, of course, fails.")
+
+
+def scenario_2():
+    """
+    """
+
+    print("\nDeanna creates a new event: \"Counseling Session\"\n")
+
+    cipher = AKE()
+    deanna_private_key = cipher.private_key
+    deanna_public_key = cipher.public_key
+
+    req = auth_req(
+        CreateRequest(
+            event=Event(
+                name="Counseling Session",
+                description="Betazoid empathy",
+                tickets=2,
+                start=time.time(),
+                end=time.time() + 2_628_00,
+                private=True
+            )
+        ),
+        deanna_private_key,
+        deanna_public_key,
+        CreateRequest
+    ).to_dict()
+    res = requests.post(SERVER_URL + "/create", json=req)
+    res_json = parse_res(res)
+
+    event_id = res_json["data"]["content"]["event_id"]
+
+    #####
+
+    print("\nWilliam gets the event ID from Deanna and he attempts to register")
+    input("> ")
+
+    cipher = AKE()
+    william_private_key = cipher.private_key
+    william_public_key = cipher.public_key
+
+    req = auth_req(
+        RegisterRequest(event_id=event_id),
+        william_private_key,
+        william_public_key,
+        RegisterRequest
+    ).to_dict()
+    res = requests.post(SERVER_URL + "/register", json=req)
+    parse_res(res)
+
+    print("\n... but it fails???")
+    input(">")
 
     ## William successfully registers with verification + custom metadata
 
-    ## Wesley can't register bc he has no verification
+    print("\nAnd after talking to Deanna, he realizes that he needs a verification from her to receive a ticket")
+    print("\nSo she signs a verification request containing his public key and gives it to him\n")
 
-    ## William redeems and then does verif (we see custom metadata)
+    verification = auth_req(
+        Verification(
+            event_id=event_id,
+            public_key=william_public_key,
+            metadata="Imzadi <3"
+        ),
+        deanna_private_key,
+        deanna_public_key,
+        Verification
+    )
+
+    print(verification.to_dict())
+
+    print("\nAnd now William includes this verification in his request and successfully registers")
+
+    req = auth_req(
+        RegisterRequest(
+            event_id=event_id,
+            verification=verification
+        ),
+        william_private_key,
+        william_public_key,
+        RegisterRequest
+    ).to_dict()
+    res = requests.post(SERVER_URL + "/register", json=req)
+    res_json = parse_res(res)
+
+    william_ticket = res_json["data"]["content"]["ticket"]
+
+    
+
+    ## Reginald tries to register with verification signed on William's pubkey accidentally and fails
+
+    ## Reginald successfully registers with verification + custom metadata
+
+    ## Wesley can't register bc event is full
+
+    ## William/Reginals redeem and then do verif (we see custom metadata)
 
     ## CREATE ENDPOINT and then demonstrate the deletion of both events
+
+
+
+def main():
+    """
+    """
+
+    print("ZETA demo!")
+    print("PRESS ENTER TO START")
+    input("> ")
+
+    #scenario_1()
+    #input("> ")
+
+    scenario_2()
+
 
 
 

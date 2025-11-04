@@ -50,6 +50,7 @@ class Event(BaseModel):
     ## (at most prob just make a command that specific targeted fields could add marginal efficicney)
     ## TODO * some comments here prob bs (just make note of contraint possibility -- not rly in scope here imo and poss client side tbh)
 
+    ## TODO* change name from private to restricted/controlled or sum
 
     @classmethod
     def from_dict(self, data: dict) -> "Event":
