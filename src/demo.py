@@ -7,6 +7,7 @@ from app.crypto.asymmetric import AKE
 from app.util import keys
 
 
+import uuid
 import time
 
 
@@ -336,6 +337,19 @@ def scenario_2():
 
     event_id = res_json["data"]["content"]["event_id"]
 
+    print("\nShe also tests submitting a request with an expired timestamp\n")
+
+    req["data"]["timestamp"] -= TIMESTAMP_ERROR
+    res = requests.post(SERVER_URL + "/create", json=req)
+    parse_res(res)
+
+    print("\n... and a request with data modified post-signature\n")
+
+    req["data"]["id"] = str(uuid.uuid4())
+    req["data"]["timestamp"] = time.time()
+    res = requests.post(SERVER_URL + "/create", json=req)
+    parse_res(res)
+
     #####
 
     print("\nWilliam gets the event ID from Deanna and he attempts to register")
@@ -428,7 +442,7 @@ def scenario_2():
 
     #####
 
-    print("Deanna fixes the verification block and Reginald tries again")
+    print("Deanna fixes the verification block and Reginald tries again with success")
     input("> ")
 
     verification = auth_req(
@@ -454,8 +468,6 @@ def scenario_2():
     res = requests.post(SERVER_URL + "/register", json=req)
     res_json = parse_res(res)
 
-    ## Reginald successfully registers with verification + custom metadata
-
     ## Wesley can't register bc event is full
 
     ## William/Reginals redeem and then do verif (we see custom metadata)
@@ -472,8 +484,8 @@ def main():
     print("PRESS ENTER TO START")
     input("> ")
 
-    scenario_1()
-    input("> ")
+    #scenario_1()
+    #input("> ")
 
     scenario_2()
 
