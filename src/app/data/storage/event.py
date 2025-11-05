@@ -2,17 +2,14 @@
 """
 
 
-import sqlite3
+import psycopg
 import pickle
 from typing import List, Optional
 
-from config import DB_FILE
+from config import DATABASE_CREDS
 from fastapi import HTTPException
 
 
-
-BYTE_SIZE = 8
-# assumed byte size (in bits)
 
 
 
@@ -33,24 +30,17 @@ def load(event_id: str) -> Optional[dict]:###<-this funtionality will probably n
     """
     ### Event return
 
+    try:
+        with psycopg.connect(**DATABASE_CREDS) as conn:
+            with conn.cursor() as cur:
+                # NOTE: psycopg uses %s placeholders (not ? like sqlite)
+                cur.execute("SELECT * FROM events WHERE id = %s;", (event_id,))
+                row = cur.fetchone()
+                return dict(row) if row else None
 
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-
-    # Fetch event by ID
-    cursor.execute("SELECT * FROM events WHERE id = ?", (event_id,))
-    event_row = cursor.fetchone()
-
-    print(event_row)
-
-    if event_row is None:
-        conn.close()
+    except Exception as e:
+        # optionally log e
         return None
-
-    columns = [desc[0] for desc in cursor.description]
-    conn.close()
-
-    return dict(zip(columns, event_row))
 
 
 def load_full(event_id: str, issue: bool) -> Optional[dict]:###<-this funtionality will probably need to be split up
@@ -63,58 +53,46 @@ def load_full(event_id: str, issue: bool) -> Optional[dict]:###<-this funtionali
         "data"  : event data dictionary (exclusing bitstrings)
     }
     """
-    
-    
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
 
-    if issue:
-        cursor.execute("""
-            UPDATE events
-                SET issued = CASE
-                    WHEN issued + 1 > tickets THEN tickets
-                    ELSE issued + 1
-                END
-            WHERE id = ?
-                AND issued < tickets
-            RETURNING *
-        """, (event_id,))
-        # issue a new ticket before loading data for new registrations
+    try:
+        with psycopg.connect(**DATABASE_CREDS) as conn:
+            with conn.cursor() as cur:
+                if issue:
+                    cur.execute(
+                        """
+                        UPDATE events
+                           SET issued = issued + 1
+                         WHERE id = %s
+                           AND issued < tickets
+                        RETURNING *;
+                        """,
+                        (event_id,),
+                    )
+                else:
+                    cur.execute("SELECT * FROM events WHERE id = %s;", (event_id,))
 
-    else:
-        cursor.execute("SELECT * FROM events WHERE id = ?", (event_id,))
-    
-    event_row = cursor.fetchone()
+                event_row = cur.fetchone()
+                if event_row is None:
+                    # covers both "not found" and "sold out" when issue=True
+                    return None
 
-    if event_row is None:
-        conn.commit()
+                cur.execute(
+                    """
+                    SELECT event_key, owner_public_key
+                      FROM event_data
+                     WHERE event_id = %s;
+                    """,
+                    (event_id,),
+                )
+                data_row = cur.fetchone()
+
+                # relying on context manager to commit
+
+        return {"event": event_row, "data": data_row}
+
+    except Exception:
         return None
 
-    event_columns = [desc[0] for desc in cursor.description]
-
-    # Fetch event data
-    cursor.execute("""
-        SELECT event_key, owner_public_key 
-        FROM event_data 
-        WHERE event_id = ?
-    """, (event_id,))
-    data_row = cursor.fetchone()
-
-    
-
-
-    conn.commit()
-    conn.close()
-
-    
-    data_columns = ["event_key", "owner_public_key"]
-
-    data = {
-        "event": dict(zip(event_columns, event_row)),
-        "data": dict(zip(data_columns, data_row))
-    }
-
-    return data
 
 
 def search(text: str, limit: int) -> List[dict]:##these dicts are ONLY event, no data
@@ -127,23 +105,21 @@ def search(text: str, limit: int) -> List[dict]:##these dicts are ONLY event, no
     :return: list of event dictionaries (events only, no event-associated data dictionaries)
     """
 
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
+    pattern = f"%{text}%"
 
-    # Search events by partial name match
-    cursor.execute("""
-        SELECT * 
-        FROM events 
-        WHERE name LIKE ? 
-        LIMIT ?
-    """, (f"%{text}%", limit))
-
-    rows = cursor.fetchall()
-    conn.close()
-
-    columns = [desc[0] for desc in cursor.description]
-    return [dict(zip(columns, row)) for row in rows]
-
+    with psycopg.connect(**DATABASE_CREDS) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT *
+                  FROM events
+                 WHERE name ILIKE %s
+                 LIMIT %s;
+                """,
+                (pattern, limit),
+            )
+            rows = cur.fetchall()
+            return list(rows)  # rows are already dicts
 
 
 
@@ -157,29 +133,30 @@ def create(event: dict, event_data: dict) -> None:
         bitstrings, which should contain all 0 bits )
     """
 
-    # Create redeemed bitstring (all tickets start unredeemed)
-    data_bytes = b'\x00' * event["tickets"] # Create a bytes object of size `tickets`
+    data_bytes = b"\x00" * int(event["tickets"])
 
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
+    with psycopg.connect(**DATABASE_CREDS) as conn:
+        with conn.cursor() as cur:
+            # Insert into events
+            cur.execute(
+                """
+                INSERT INTO events (id, name, description, tickets, issued, start, "end", private)
+                VALUES (%(id)s, %(name)s, %(description)s, %(tickets)s, %(issued)s, %(start)s, %(end)s, %(private)s);
+                """,
+                event,
+            )
 
-    # Insert into events table
-    cursor.execute("""
-        INSERT INTO events (id, name, description, tickets, issued, start, end, private)
-        VALUES (:id, :name, :description, :tickets, :issued, :start, :end, :private)
-    """, event)
-
-    # Insert into event_data table
-    cursor.execute("""
-        INSERT INTO event_data (event_id, event_key, owner_public_key, data_bytes)
-        VALUES (:event_id, :event_key, :owner_public_key, :data_bytes)
-        """, {
-            "event_id": event["id"],
-            "event_key": event_data["event_key"],
-            "owner_public_key": event_data["owner_public_key"],
-            "data_bytes": data_bytes,
-        }
-    )
-
-    conn.commit()
-    conn.close()
+            # Insert into event_data
+            cur.execute(
+                """
+                INSERT INTO event_data (event_id, event_key, owner_public_key, data_bytes)
+                VALUES (%(event_id)s, %(event_key)s, %(owner_public_key)s, %(data_bytes)s);
+                """,
+                {
+                    "event_id": event["id"],
+                    "event_key": event_data["event_key"],            # bytes for BYTEA
+                    "owner_public_key": event_data["owner_public_key"],
+                    "data_bytes": data_bytes,                         # bytes for BYTEA
+                },
+            )
+        # context manager commits on successful exit

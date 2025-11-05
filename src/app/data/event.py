@@ -40,7 +40,7 @@ class Event(BaseModel):
     tickets: int = Field(DEFAULT_EVENT_TICKETS, description="Number of total event tickets")
     issued: int = Field(0, description="Number of tickets issued")
     start: float = Field(default_factory=lambda: time.time(), description="Epoch timestamp of event start date")
-    end: float = Field(default_factory=lambda: time.time() + DEFAULT_EVENT_TTL, description="Epoch timestamp of event end date")
+    finish: float = Field(default_factory=lambda: time.time() + DEFAULT_EVENT_TTL, description="Epoch timestamp of event end date")
     private: bool = Field(False, description="Specifies whether event is public (open) or private (requires authorization)")
     # TODO - set contstriants on these values
     ## also: the select * always loading style into event doesn't seem sustainable -- but db is just poc? well idk
@@ -49,6 +49,7 @@ class Event(BaseModel):
 
     ## TODO* change name from private to restricted/controlled or sum
 
+    ## TODO* I think this isnt needed -- obj = MyModel.parse_obj(data) load from dict
     @classmethod
     def from_dict(self, data: dict) -> "Event":
         # Manually set default values if not provided in the dictionary
@@ -60,7 +61,7 @@ class Event(BaseModel):
             tickets=data.get("tickets", DEFAULT_EVENT_TICKETS),
             issued=data.get("issued", 0),
             start=data.get("start", time.time()),
-            end=data.get("end", time.time() + DEFAULT_EVENT_TTL),
+            finish=data.get("finish", time.time() + DEFAULT_EVENT_TTL),
             private=data.get("private", False),
         )
 

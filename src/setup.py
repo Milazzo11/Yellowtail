@@ -7,7 +7,7 @@ import pickle
 import json
 import base64
 
-import sqlite3
+import psycopg
 
 from app.crypto.asymmetric import AKE
 from app.crypto.symmetric import SKE
@@ -15,7 +15,7 @@ from app.util import display
 from dateutil import parser
 
 from config import (
-    PRIV_KEY_FILE, PUB_KEY_FILE, DB_FILE
+    PRIV_KEY_FILE, PUB_KEY_FILE, DATABASE_CREDS
 )
 
 
@@ -64,39 +64,41 @@ def db_setup() -> None:
     Set up the database schema for storing events and their data.
     """
     try:
-        if os.path.exists(DB_FILE):
-            os.remove(DB_FILE)
 
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        
-        # Create events table
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS events (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            description TEXT,
-            tickets INTEGER NOT NULL,
-            issued INTEGER NOT NULL,
-            start REAL NOT NULL,
-            end REAL NOT NULL,
-            private INTEGER NOT NULL
-        )
-        """)
-        
-        # Create event_data table
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS event_data (
-            event_id TEXT PRIMARY KEY,
-            event_key BLOB NOT NULL,
-            owner_public_key TEXT NOT NULL,
-            data_bytes BLOB NOT NULL,
-            FOREIGN KEY (event_id) REFERENCES events (id)
-        )
-        """)
+        # Connect to Postgres
+        with psycopg.connect(**DATABASE_CREDS) as conn:
 
-        conn.commit()
-        conn.close()
+            # Drop in FK order to mimic a clean slate
+            conn.execute("DROP TABLE IF EXISTS event_data;")
+            conn.execute("DROP TABLE IF EXISTS events;")
+
+            # Recreate tables using PostgreSQL types
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS events (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    tickets INTEGER NOT NULL,
+                    issued INTEGER NOT NULL,
+                    start DOUBLE PRECISION NOT NULL,
+                    finish DOUBLE PRECISION NOT NULL,
+                    private INTEGER NOT NULL
+                );
+            """)
+
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS event_data (
+                    event_id TEXT PRIMARY KEY,
+                    event_key BYTEA NOT NULL,
+                    owner_public_key TEXT NOT NULL,
+                    data_bytes BYTEA NOT NULL,
+                    FOREIGN KEY (event_id) REFERENCES events (id)
+                );
+            """)
+
+            conn.commit()
+
+        # If you were using a UI helper called `display`, keep these lines; otherwise remove them.
 
         display.clear()
         print("SUCCESS: Database setup completed")

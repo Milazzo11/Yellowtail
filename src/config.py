@@ -49,5 +49,14 @@ DEFAULT_EVENT_TTL = 2_628_00
 # MAX_EVENT_TTL = 31_536_000
 
 
+DATABASE_CREDS = {
+    "dbname": "zeta",
+    "user": "postgres",
+    "password": "password",
+    "host": "localhost",
+    "port": 5432,
+}
+
+
 ###################################
 ###################################

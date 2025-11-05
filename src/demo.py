@@ -83,7 +83,7 @@ def scenario_1():
                 description="Tea, earl grey, hot",
                 tickets=16,
                 start=time.time(),
-                end=time.time() + 2_628_00,
+                finish=time.time() + 2_628_00,
                 private=False
             )
         ),
@@ -362,7 +362,7 @@ def scenario_2():
                 description="Betazoid empathy",
                 tickets=2,
                 start=time.time(),
-                end=time.time() + 2_628_00,
+                finish=time.time() + 2_628_00,
                 private=True
             )
         ),
