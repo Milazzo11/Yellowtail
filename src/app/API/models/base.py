@@ -44,6 +44,10 @@ from app.crypto.asymmetric import AKE
 
 ### TODO - prob rework crypto libs to allow JWT and JWE for dict type (but do Union[bytes, str, dict] to generalize)
 
+
+## TODO * can model dump be used everywhere instead of to_dict?
+
+
 from threading import Lock
 
 
@@ -96,13 +100,7 @@ class Data(BaseModel, Generic[T]):
         return self(id=str(uuid.uuid4()), timestamp=time.time(), content=content)
     
 
-    def to_dict(self) -> dict:
 
-        return {
-            "id": self.id,
-            "timestamp": self.timestamp,
-            "content": self.content.to_dict()###<<-- TODO, somehow add interface functionality
-        }
     
     ## ALSO TODO -- rn, it is required that users send everything for verification... but we don't want that
 
@@ -123,7 +121,7 @@ class Auth(BaseModel, Generic[T]):
 
         return self(
             data=data, public_key=keys.pub(),
-            signature=cipher.sign(data.to_dict())
+            signature=cipher.sign(data.model_dump())
         )
 
 
@@ -168,18 +166,7 @@ class Auth(BaseModel, Generic[T]):
 
         challenge_verif(self.data)
 
-        if not cipher.verify(self.signature, self.data.to_dict()):
+        if not cipher.verify(self.signature, self.data.model_dump(exclude_unset=True)):
             raise HTTPException(status_code=401, detail="Authentication failed")
         
         return self.data.content
-
-
-    def to_dict(self) -> dict:
-        """
-        """
-
-        return {
-            "data": self.data.to_dict(),
-            "public_key": self.public_key,
-            "signature": self.signature
-        }

@@ -13,20 +13,11 @@ class Transfer(BaseModel):
     ticket: str = Field(..., description="Ticket being transferred")
     transfer_public_key: str = Field(..., description="Public key of the new ticket owner (user making request)")
 
-    def to_dict(self) -> dict:
-        return self.__dict__
-
 
 class TransferRequest(BaseModel):
     event_id: str = Field(..., description="ID of the event for which the ticket is being transferred")
     transfer: Auth[Transfer] = Field(..., description="Transfer authorization JSON (signed by current ticket owner)")
 
-
-    def to_dict(self) -> dict:
-        return {
-            "event_id": self.event_id,
-            "transfer": self.transfer.to_dict()
-        }
 
 
 class TransferResponse(BaseModel):
@@ -52,7 +43,3 @@ class TransferResponse(BaseModel):
         ticket = new_ticket.pack()
 
         return self(ticket=ticket)
-    
-
-    def to_dict(self) -> dict:
-        return self.__dict__

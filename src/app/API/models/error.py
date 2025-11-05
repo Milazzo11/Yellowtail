@@ -14,7 +14,3 @@ class Error(BaseModel):
         detail = exception.detail
 
         return self(error=True, detail=detail)
-    
-
-    def to_dict(self) -> dict:
-        return self.__dict__

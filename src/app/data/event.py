@@ -30,9 +30,6 @@ class Data(BaseModel):
         )
 
 
-    def to_dict(self) -> dict:
-        return self.__dict__
-
 
 
 
@@ -87,10 +84,6 @@ class Event(BaseModel):
 
 
 
-    def to_dict(self) -> dict:
-        return self.__dict__
-
-
 
     def create(self, owner_public_key: str) -> str:
         """
@@ -99,7 +92,7 @@ class Event(BaseModel):
         """
 
         event_data = Data(owner_public_key=owner_public_key)
-        event_db.create(self.to_dict(), event_data.to_dict())
+        event_db.create(self.model_dump(), event_data.model_dump())
 
 
     def next_ticket(self) -> int:
@@ -146,12 +139,6 @@ class EventData(BaseModel):
         self.data = Data.from_dict(dict["data"])
 
 
-    def to_dict(self) -> dict:
-        return {
-            "event": self.event.to_dict(),
-            "data": self.event.to_dict()
-        }
-    
 
     def next_ticket(self) -> int:
         return self.event.next_ticket()

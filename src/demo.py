@@ -30,7 +30,7 @@ def auth_req(content, private_key, public_key, request_type):
 
     return Auth[request_type](
         data=packet, public_key=public_key,
-        signature=cipher.sign(packet.to_dict())
+        signature=cipher.sign(packet.model_dump())
     )
 
     ### TODO - eventally modify Auth load to make this more accessible
@@ -89,7 +89,7 @@ def scenario_1():
         beverly_private_key,
         beverly_public_key,
         CreateRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/create", json=req)
     res_json = parse_res(res)
 
@@ -109,7 +109,7 @@ def scenario_1():
         jean_luc_private_key,
         jean_luc_public_key,
         SearchRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/search", json=req)
     parse_res(res)
 
@@ -120,7 +120,7 @@ def scenario_1():
         jean_luc_private_key,
         jean_luc_public_key,
         RegisterRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/register", json=req)
     res_json = parse_res(res)
 
@@ -148,7 +148,7 @@ def scenario_1():
         Transfer
     )
 
-    print(transfer.to_dict())
+    print(transfer.model_dump())
 
     print("\nGeordi can now include this signed chunk of data in his request to the server for a transfer to prove cooperation\n")
 
@@ -160,7 +160,7 @@ def scenario_1():
         geordi_private_key,
         geordi_public_key,
         TransferRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/transfer", json=req)
     res_json = parse_res(res)
 
@@ -179,7 +179,7 @@ def scenario_1():
         jean_luc_private_key,
         jean_luc_public_key,
         RedeemRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/redeem", json=req)
     parse_res(res)
 
@@ -203,7 +203,7 @@ def scenario_1():
         geordi_private_key,
         geordi_public_key,
         TransferRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/transfer", json=req)
     parse_res(res)
 
@@ -223,7 +223,7 @@ def scenario_1():
         beverly_private_key,
         beverly_public_key,
         VerifyRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/verify", json=req)
     parse_res(res)
 
@@ -237,7 +237,7 @@ def scenario_1():
         beverly_private_key,
         beverly_public_key,
         RedeemRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/redeem", json=req)
     parse_res(res)
 
@@ -250,7 +250,7 @@ def scenario_1():
         beverly_private_key,
         beverly_public_key,
         VerifyRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/verify", json=req)
     parse_res(res)
 
@@ -267,7 +267,7 @@ def scenario_1():
         geordi_private_key,
         geordi_public_key,
         RedeemRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/redeem", json=req)
     parse_res(res)
 
@@ -282,7 +282,7 @@ def scenario_1():
         beverly_private_key,
         beverly_public_key,
         VerifyRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/verify", json=req)
     parse_res(res)
 
@@ -299,7 +299,7 @@ def scenario_1():
         beverly_private_key,
         beverly_public_key,
         VerifyRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/verify", json=req)
     parse_res(res)
 
@@ -330,7 +330,7 @@ def scenario_2():
         deanna_private_key,
         deanna_public_key,
         CreateRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/create", json=req)
     res_json = parse_res(res)
 
@@ -350,7 +350,7 @@ def scenario_2():
         william_private_key,
         william_public_key,
         RegisterRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/register", json=req)
     parse_res(res)
 
@@ -373,7 +373,7 @@ def scenario_2():
         Verification
     )
 
-    print(verification.to_dict())
+    print(verification.model_dump())
 
     print("\nAnd now William includes this verification in his request and successfully registers")
 
@@ -385,15 +385,74 @@ def scenario_2():
         william_private_key,
         william_public_key,
         RegisterRequest
-    ).to_dict()
+    ).model_dump()
     res = requests.post(SERVER_URL + "/register", json=req)
     res_json = parse_res(res)
 
     william_ticket = res_json["data"]["content"]["ticket"]
 
-    
+    #####
 
-    ## Reginald tries to register with verification signed on William's pubkey accidentally and fails
+    print("\nReginald also wants to join the event, so Deanna gives him a signed verification block to use")
+    print("... but unknowingly, she accidentally signs it on William's public key!\n")
+    input(">")
+
+    verification = auth_req(
+        Verification(
+            event_id=event_id,
+            public_key=william_public_key,
+            metadata="Broccoli"
+        ),
+        deanna_private_key,
+        deanna_public_key,
+        Verification
+    )
+
+    print("\nReginald attempts to register... but obviously it doesn't work\n")
+
+    cipher = AKE()
+    reginald_private_key = cipher.private_key
+    reginald_public_key = cipher.public_key
+
+    req = auth_req(
+        RegisterRequest(
+            event_id=event_id,
+            verification=verification
+        ),
+        reginald_private_key,
+        reginald_public_key,
+        RegisterRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/register", json=req)
+    res_json = parse_res(res)
+
+    #####
+
+    print("Deanna fixes the verification block and Reginald tries again")
+    input("> ")
+
+    verification = auth_req(
+        Verification(
+            event_id=event_id,
+            public_key=reginald_public_key,
+            metadata="Broccoli"
+        ),
+        deanna_private_key,
+        deanna_public_key,
+        Verification
+    )
+
+    req = auth_req(
+        RegisterRequest(
+            event_id=event_id,
+            verification=verification
+        ),
+        reginald_private_key,
+        reginald_public_key,
+        RegisterRequest
+    ).model_dump()
+    res = requests.post(SERVER_URL + "/register", json=req)
+    res_json = parse_res(res)
 
     ## Reginald successfully registers with verification + custom metadata
 
@@ -413,8 +472,8 @@ def main():
     print("PRESS ENTER TO START")
     input("> ")
 
-    #scenario_1()
-    #input("> ")
+    scenario_1()
+    input("> ")
 
     scenario_2()
 

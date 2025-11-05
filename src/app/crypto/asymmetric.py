@@ -198,11 +198,7 @@ class RSA:
         """
 
         if type(message) == dict:
-            # JWS (compact, embedded payload). Same RSA key, alg stays RS256.
-            key = jwk.JWK.from_pem(self.private_key)
-            t = jws.JWS(self._json_canon(message))
-            t.add_signature(key, protected={"alg": "RS256"})
-            return t.serialize(compact=True)  # looks like "<hdr>.<payload>.<sig>"
+            message = self._json_canon(message)
 
         if type(message) == str:
             message = message.encode("utf-8")
@@ -237,15 +233,7 @@ class RSA:
         """
 
         if type(message) == dict:
-            try:
-                key = jwk.JWK.from_pem(self.public_key)
-                t = jws.JWS()
-                t.deserialize(signature)  # accepts compact JWS string
-                t.verify(key)             # raises on failure
-
-                return True
-            except:
-                return False
+            message = self._json_canon(message)
 
         if type(message) == str:
             message = message.encode("utf-8")

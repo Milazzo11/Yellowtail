@@ -11,9 +11,6 @@ class VerifyRequest(BaseModel):
     ticket: str = Field(..., description="Ticket string of user to check")
     check_public_key: str = Field(..., description="Public key of the user being checked for ticket redemption")
 
-    def to_dict(self) -> dict:
-        return self.__dict__
-
 
 
 class VerifyResponse(BaseModel):
@@ -29,7 +26,3 @@ class VerifyResponse(BaseModel):
         verification = ticket.verify()
 
         return self(verification=verification, metadata=ticket.metadata)
-    
-
-    def to_dict(self) -> dict:
-        return self.__dict__

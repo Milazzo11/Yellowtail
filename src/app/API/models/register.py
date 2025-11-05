@@ -14,25 +14,10 @@ class Verification(BaseModel):
     public_key: str = Field(..., description="Public key of user registering")
     metadata: Optional[str] = Field(None, description="Custom ticket metadata")
 
-    def to_dict(self) -> dict:
-        return self.__dict__
-
 
 class RegisterRequest(BaseModel):
     event_id: str = Field(..., description="ID of event to register for")
     verification: Optional[Auth[Verification]] = Field(None, description="Verification for non-public/paid events")
-
-    def to_dict(self) -> dict:
-
-        if self.verification is None:
-            verif_value = None
-        else:
-            verif_value = self.verification.to_dict()
-
-        return {
-            "event_id": self.event_id,
-            "verification": verif_value
-        }
 
 
 class RegisterResponse(BaseModel):
@@ -70,7 +55,3 @@ class RegisterResponse(BaseModel):
         ticket = ticket.pack()
 
         return self(ticket=ticket)
-
-    
-    def to_dict(self) -> dict:
-        return self.__dict__

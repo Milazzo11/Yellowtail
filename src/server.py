@@ -57,5 +57,5 @@ async def exception_handler(_, exception: HTTPException) -> JSONResponse:
 
     return JSONResponse(
         status_code=exception.status_code,
-        content=auth_error.to_dict()
+        content=auth_error.model_dump()
     )
