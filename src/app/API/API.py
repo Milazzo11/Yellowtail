@@ -7,8 +7,7 @@ API request flows.
 
 
 from app.API.models import *
-
-from fastapi import HTTPException
+from app.error.errors import DomainException
 
 
 
@@ -117,14 +116,12 @@ def delete_event(data: Auth[DeleteRequest]) -> Auth[DeleteResponse]:
     return Auth[DeleteResponse].load(packet)
 
 
-
-## TODO - this is prob gonna have to go
-def exception_handler(exception: HTTPException) -> Auth[Error]:
+def exception_handler(exception: DomainException) -> Auth[Error]:
     """
     Produce a signed error response.
 
-    :param exception: HTTP exception
-    :return: server response
+    :param exception: application domain error exception
+    :return: server error response
     """
 
     response = Error.generate(exception)

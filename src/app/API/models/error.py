@@ -5,8 +5,8 @@ HTTP error data packet models.
 """
 
 
+from app.error.errors import DomainException
 
-from fastapi import HTTPException
 from pydantic import BaseModel, Field
 from typing import Self
 
@@ -22,7 +22,7 @@ class Error(BaseModel):
 
 
     @classmethod
-    def generate(cls, exception: HTTPException) -> Self:
+    def generate(cls, exception: DomainException) -> Self:
         """
         Generate HTTP error server response.
 
@@ -30,6 +30,6 @@ class Error(BaseModel):
         :return: error server response
         """
 
-        detail = exception.detail
+        detail = exception.message
 
         return cls(error=True, detail=detail)

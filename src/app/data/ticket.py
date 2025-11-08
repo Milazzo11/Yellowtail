@@ -1,19 +1,20 @@
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional
 
 from .storage import ticket as ticket_db
-from .event import Event, EventSecrets, EventData
+from .event import Event, EventSecrets
 
 
 from app.crypto.symmetric import SKC
 
-from fastapi import HTTPException
 
 from app.crypto import hash
 import base64
 
 import json
+
+from app.error.errors import DomainException, ErrorKind
 
 
 class Ticket(BaseModel):
@@ -58,7 +59,7 @@ class Ticket(BaseModel):
         event_secrets = EventSecrets.load(event_id)
         
         if not ticket_db.reissue(event_id, number, version):
-            raise DomainError(ErrorKind.CONFLICT, "ticket transfer not allowed")
+            raise DomainException(ErrorKind.CONFLICT, "ticket transfer not allowed")
             # e.g., already redeemed or transfer limit reached
 
         ###else:
@@ -96,22 +97,22 @@ class Ticket(BaseModel):
             ticket_string_raw = json.dumps(ticket_data)
             
             if hash.generate(ticket_string_raw) != decrypted_ticket["hash"]:
-                raise DomainError(ErrorKind.PERMISSION, "ticket verification failed")
+                raise DomainException(ErrorKind.PERMISSION, "ticket verification failed")
         
         except Exception:
-            raise DomainError(ErrorKind.PERMISSION, "ticket verification failed")
+            raise DomainException(ErrorKind.PERMISSION, "ticket verification failed")
             ## TODO - this is here and general to prevent padding oracle attack
 
         if ticket_data["event_id"] != event_id:
-            raise DomainError(ErrorKind.VALIDATION, "ticket for different event")
+            raise DomainException(ErrorKind.VALIDATION, "ticket for different event")
             # ensure ticket event ID matches the event ID passed by client
 
         if ticket_data["public_key"] != public_key:
-            raise DomainError(ErrorKind.VALIDATION, "ticket for different user")
+            raise DomainException(ErrorKind.VALIDATION, "ticket for different user")
             # ensure ticket public key matches key of client making request
 
         if not ticket_db.transfer_valid_check(event_id, ticket_data["number"], ticket_data["version"]):
-            raise DomainError(ErrorKind.CONFLICT, "ticket superseded")
+            raise DomainException(ErrorKind.CONFLICT, "ticket superseded")
         
         return self(
             event_id=event_id,
@@ -129,7 +130,7 @@ class Ticket(BaseModel):
         """
 
         if not ticket_db.redeem(self.event_id, self.number, self.version):
-            raise DomainError(ErrorKind.CONFLICT, "ticket already redeemed")
+            raise DomainException(ErrorKind.CONFLICT, "ticket already redeemed")
         
 
     def verify(self):

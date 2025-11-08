@@ -8,8 +8,8 @@
 
 from .base import Auth
 from app.data.ticket import Ticket
+from app.error.errors import ErrorKind, DomainException
 
-from fastapi import HTTPException
 from pydantic import BaseModel, Field
 from typing import Self
 
@@ -65,7 +65,7 @@ class TransferResponse(BaseModel):
         transfer_data = request.transfer.unwrap()
 
         if transfer_data.transfer_public_key != public_key:
-            raise DomainError(ErrorKind.PERMISSION, "authorization for different user")
+            raise DomainException(ErrorKind.PERMISSION, "authorization for different user")
             # check that the transfer authorization is for the requesting user
 
         request.transfer.authenticate()

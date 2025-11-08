@@ -6,11 +6,10 @@ import time
 import uuid
 from config import DEFAULT_EVENT_TTL, DEFAULT_EVENT_TICKETS
 from pydantic import BaseModel, Field
-from typing import List, Optional, Tuple, Union
+from typing import List
 
 from app.crypto.symmetric import SKC
 
-from fastapi import HTTPException
 
 from .storage import event as event_db
 

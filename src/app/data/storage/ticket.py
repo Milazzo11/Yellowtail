@@ -1,8 +1,6 @@
 import psycopg
-import pickle
 from config import DATABASE_CREDS
 
-from typing import List, Optional
 
 ### TODO * transfer table
 
@@ -18,7 +16,7 @@ REDEEMED_BYTE = 2 ** (BYTE_SIZE - 1) # high order bit
 
 ## TODO* maybe make byte size global
 
-
+from app.error.errors import DomainException, ErrorKind
 
 
 
@@ -51,12 +49,12 @@ def _get_data_byte(event_id: str, ticket_number: int) -> int:
 
         # If no event_data row exists → not redeemed (your SQLite logic implied same)
         if row is None or row[0] is None:
-            raise DomainError(ErrorKind.NOT_FOUND, "event not found")
+            raise DomainException(ErrorKind.NOT_FOUND, "event not found")
 
         return int(row[0])
 
     except Exception:
-        raise DomainError(ErrorKind.INTERNAL, "database error")
+        raise DomainException(ErrorKind.INTERNAL, "database error")
 
 
 
@@ -108,11 +106,11 @@ def reissue(event_id: str, ticket_number: int, version: int) -> bool:
                     """,
                     (ticket_number, version + 1, event_id, ticket_number, version),
                 )
-                
+
                 return cur.rowcount == 1
 
     except Exception:
-        raise DomainError(ErrorKind.INTERNAL, "database error")
+        raise DomainException(ErrorKind.INTERNAL, "database error")
 
 
 
@@ -154,4 +152,4 @@ def redeem(event_id: str, ticket_number: int, version: int) -> bool:
                 return cur.rowcount == 1
         
     except Exception:
-        raise DomainError(ErrorKind.INTERNAL, "database error")
+        raise DomainException(ErrorKind.INTERNAL, "database error")

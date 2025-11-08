@@ -443,7 +443,7 @@ def scenario_2():
 
     print("\n... and a request with data modified post-signature\n")
 
-    req["data"]["id"] = str(uuid.uuid4())
+    req["data"]["nonce"] = str(uuid.uuid4())
     req["data"]["timestamp"] = time.time()
     res = requests.post(SERVER_URL + "/create", json=req)
     parse_res(res)
@@ -742,10 +742,10 @@ def main():
     print("PRESS ENTER TO START")
     input("> ")
 
-    event_id_1 = scenario_1()
+    #scenario_1()
     input("> ")
 
-    event_id_2 = scenario_2()
+    scenario_2()
     input("> ")
 
     ## CREATE ENDPOINT and then demonstrate the deletion of both events

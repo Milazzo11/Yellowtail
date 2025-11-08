@@ -7,8 +7,8 @@
 
 
 from app.data.event import Event, EventSecrets
+from app.error.errors import ErrorKind, DomainException
 
-from fastapi import HTTPException
 from pydantic import BaseModel, Field
 from typing import Self
 
@@ -44,10 +44,7 @@ class DeleteResponse(BaseModel):
         event_secrets = EventSecrets.load(request.event_id)
 
         if event_secrets.owner_public_key != public_key:
-            raise HTTPException(
-                status_code=401,
-                detail="Only an event owner may delete his own event"
-            )
+            raise DomainException(ErrorKind.PERMISSION, "not event owner")
             # confirm user is the event owner (via recorded public key)
         
         Event.delete(request.event_id)

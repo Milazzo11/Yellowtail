@@ -5,14 +5,13 @@
 import psycopg
 from psycopg.rows import dict_row
 
-import pickle
 from typing import List, Optional
 
 from config import DATABASE_CREDS
 
 
 
-
+from app.error.errors import DomainException, ErrorKind
 
 
 ### all of these should be simple SQL queries (complex logic happens outside this module)
@@ -25,7 +24,7 @@ from config import DATABASE_CREDS
 
 
 
-def _load(query: str, event_id: str) -> dict:
+def _load(query: str, event_id: str) -> Optional[dict]:
     """
     """
 
@@ -36,15 +35,12 @@ def _load(query: str, event_id: str) -> dict:
                 row = cur.fetchone()
 
                 if not row:
-                    raise DomainError(ErrorKind.NOT_FOUND, "event not found")
+                    return None
 
                 return dict(row)
-            
-    except DomainError:
-        raise
 
     except Exception:
-        raise DomainError(ErrorKind.INTERNAL, "database error")
+        raise DomainException(ErrorKind.INTERNAL, "database error")
 
 
 
@@ -52,7 +48,7 @@ def issue(event_id: str) -> dict:
     """
     """
     
-    return _load(
+    event = _load(
         """
         UPDATE events
             SET issued = issued + 1
@@ -63,6 +59,11 @@ def issue(event_id: str) -> dict:
         event_id
     )
 
+    if event is None:
+        raise DomainException(ErrorKind.CONFLICT, "unable to issue ticket")
+    
+    return event
+
 
 def load_event(event_id: str) -> dict:
     """
@@ -72,7 +73,12 @@ def load_event(event_id: str) -> dict:
     :return: event dictionary
     """
 
-    return _load("SELECT * FROM events WHERE id = %s;", event_id)
+    event = _load("SELECT * FROM events WHERE id = %s;", event_id)
+
+    if event is None:
+        raise DomainException(ErrorKind.NOT_FOUND, "event not found")
+    
+    return event
     
 
 def load_secrets(event_id: str) -> dict:
@@ -80,7 +86,7 @@ def load_secrets(event_id: str) -> dict:
     Load an event and associated data (besides redemption and storage bitstrings).
     """
 
-    return _load(
+    event = _load(
         """
         SELECT event_key, owner_public_key
             FROM event_data
@@ -89,7 +95,10 @@ def load_secrets(event_id: str) -> dict:
         event_id
     )
 
-### TODO * exchange implementation to use these
+    if event is None:
+        raise DomainException(ErrorKind.NOT_FOUND, "event not found")
+    
+    return event
 
 
 
@@ -124,7 +133,7 @@ def search(text: str, limit: int) -> List[dict]:##these dicts are ONLY event, no
                 return list(rows)  # rows are already dicts
             
     except Exception:
-        raise DomainError(ErrorKind.INTERNAL, "database error")
+        raise DomainException(ErrorKind.INTERNAL, "database error")
 
 
 
@@ -167,7 +176,7 @@ def create(event: dict, event_secrets: dict) -> None:
             # context manager commits on successful exit
 
     except Exception:
-        raise DomainError(ErrorKind.INTERNAL, "database error")
+        raise DomainException(ErrorKind.INTERNAL, "database error")
 
 
 
@@ -201,4 +210,4 @@ def delete(event_id: str) -> bool:
                 return cur.rowcount > 0
             
     except Exception:
-        raise DomainError(ErrorKind.INTERNAL, "database error")
+        raise DomainException(ErrorKind.INTERNAL, "database error")

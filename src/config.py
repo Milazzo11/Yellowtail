@@ -2,7 +2,6 @@
 """
 
 
-import os
 
 
 ###################################
@@ -10,15 +9,10 @@ import os
 ###################################
 
 
-PRIV_KEY_FILE = os.path.join("data", "priv.key")
-# private key file
-
-
-PUB_KEY_FILE = os.path.join("data", "pub.key")
 
 
 
-DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 
 
 

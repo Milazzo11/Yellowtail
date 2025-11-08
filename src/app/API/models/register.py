@@ -9,8 +9,8 @@
 from .base import Auth
 from app.data.event import Event, EventSecrets
 from app.data.ticket import Ticket
+from app.error.errors import ErrorKind, DomainException
 
-from fastapi import HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional, Self
 
@@ -64,21 +64,21 @@ class RegisterResponse(BaseModel):
 
         if event.restricted:
             if request.verification is None:
-                raise DomainError(ErrorKind.PERMISSION, "verification required")
+                raise DomainException(ErrorKind.PERMISSION, "verification required")
                 # confirm verification provided
             
             if request.verification.public_key != event_secrets.owner_public_key:
-                raise DomainError(ErrorKind.PERMISSION, "unauthorized signer")
+                raise DomainException(ErrorKind.PERMISSION, "unauthorized signer")
                 # confirm verification is signed by the event owner
             
             verif_data = request.verification.unwrap()
 
             if verif_data.event_id != request.event_id:
-                raise DomainError(ErrorKind.PERMISSION, "verification for different event")
+                raise DomainException(ErrorKind.PERMISSION, "verification for different event")
                 # confirm verification is for the correct event
             
             if verif_data.public_key != public_key:
-                raise DomainError(ErrorKind.PERMISSION, "verification for different user")
+                raise DomainException(ErrorKind.PERMISSION, "verification for different user")
                 # confirm verification is for the requesting user
 
             request.verification.authenticate()
