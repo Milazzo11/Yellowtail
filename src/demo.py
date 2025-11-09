@@ -309,6 +309,10 @@ def scenario_1():
 
     #####
 
+    ##### TODO - redo redeem/verification demo code
+
+    #####
+
     print("\nLater on, Jean-Luc asks Beverly to attempt a verification with his outdated ticket\n")
 
     req = auth_req(

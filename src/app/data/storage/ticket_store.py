@@ -111,7 +111,7 @@ def reissue(event_id: str, ticket_number: int, version: int) -> bool:
 
 
 ## TODO - maybe have some of these return int codes instead of bool for better err msg?
-def redeem(event_id: str, ticket_number: int, new_byte: int, threshold: int) -> bool:
+def apply_flag(event_id: str, ticket_number: int, update: int, flag: int) -> bool:
     """
     Mark the ticket as redeemed (set its byte to 0xFF) only if not already redeemed.
     
@@ -128,7 +128,7 @@ def redeem(event_id: str, ticket_number: int, new_byte: int, threshold: int) -> 
                     WHERE event_id = %s
                     AND get_byte(data_bytes, %s) < %s
                     """,
-                    (ticket_number, new_byte, event_id, ticket_number, threshold),
+                    (ticket_number, update, event_id, ticket_number, flag),
                 )
 
                 return cur.rowcount == 1

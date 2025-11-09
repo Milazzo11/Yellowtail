@@ -15,14 +15,18 @@ from app.error.errors import DomainException, ErrorKind
 import base64
 import json
 from pydantic import BaseModel
-from typing import Optional, Self
+from typing import Optional, Self, Tuple
 
 
 
-REDEEMED_BYTE = 2 ** (8 - 1)
+REDEEMED_BYTE = 2 ** (8 - 2)
 # value added (or bitwise ORed) to ticket byte data to signal redemption
-# (the high bit determines redemption status, and all other bits determine version,
-# therefore, the redemption byte value is: 0b10000000)
+# therefore, the redeemed byte value is: 0b01000000)
+
+
+STAMPED_BYTE = 2 ** (8 - 1) + 2 ** (8 - 2)
+# value added (or bitwise ORed) to ticket byte data to signal stamping
+# therefore, the stamped byte value is: 0b11000000)
 
 
 
@@ -191,20 +195,34 @@ class Ticket(BaseModel):
         Redeem the current ticket.
         """
 
-        if not ticket_store.redeem(
+        if not ticket_store.apply_flag(
             self.event_id,
             self.number,
-            self.version + REDEEMED_BYTE,
+            self.version | REDEEMED_BYTE,
             REDEEMED_BYTE
         ):
             raise DomainException(ErrorKind.CONFLICT, "ticket redemption failed")
 
 
-    def verify(self) -> bool:
+    def stamp(self) -> None:
         """
-        Verify redemption of the current ticket.
+        Stamp the current ticket.
+        """
 
-        :return: redemption status
+        if not ticket_store.apply_flag(
+            self.event_id,
+            self.number,
+            self.version | STAMPED_BYTE,
+            STAMPED_BYTE
+        ):
+            raise DomainException(ErrorKind.CONFLICT, "ticket stamping failed")
+        
+
+    def verify(self) -> Tuple[bool, bool]:
+        """
+        Verify redemption and stamped status of the current ticket.
+
+        :return: redemption status, stamped status
         """
 
         byte = ticket_store.get_data_byte(self.event_id, self.number)
@@ -212,7 +230,7 @@ class Ticket(BaseModel):
         if byte is None:
             return DomainException(ErrorKind.NOT_FOUND, "event not found")
         
-        return byte >= REDEEMED_BYTE
+        return byte >= REDEEMED_BYTE, byte >= STAMPED_BYTE
 
 
     def pack(self) -> str:
