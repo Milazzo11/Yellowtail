@@ -1,4 +1,7 @@
 """
+Event model database integrations.
+
+:author: Max Milazzo
 """
 
 

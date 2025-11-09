@@ -1,3 +1,12 @@
+"""
+Ticket model database integrations.
+
+:author: Max Milazzo
+"""
+
+
+
+
 import psycopg
 from config import DATABASE_CREDS
 

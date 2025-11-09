@@ -26,7 +26,6 @@ def app_credits() -> None:
     input()
 
 
-
 def key_setup() -> None:
     """
     Application asymmetric cryptosystem initialization.
@@ -43,23 +42,18 @@ def key_setup() -> None:
         print(f"ERROR: Key setup failed --\n{e}")
         
     input()
-    
-    
+
 
 def db_setup() -> None:
     """
     Set up the database schema for storing events and their data.
     """
+
     try:
-
-        # Connect to Postgres
         with psycopg.connect(**DATABASE_CREDS) as conn:
-
-            # Drop in FK order to mimic a clean slate
             conn.execute("DROP TABLE IF EXISTS event_data;")
             conn.execute("DROP TABLE IF EXISTS events;")
 
-            # Recreate tables using PostgreSQL types
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS events (
                     id TEXT PRIMARY KEY,
@@ -138,7 +132,6 @@ def main() -> None:
                 # bad input
 
         display.clear()
-
 
 
 if __name__ == "__main__":

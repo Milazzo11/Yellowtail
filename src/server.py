@@ -1,49 +1,53 @@
 """
-API endpoints
+ZETA Server.
+
+:author: Max Milazzo
 """
+
+
 
 from app.API import API
 from app.API.models import *
-
+from app.data.storage.connection import pool
 from app.error.errors import ErrorKind, DomainException
 from app.error.map import HTTP_CODE
-
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-
-import json
 import logging
 import os
 from contextlib import asynccontextmanager
-from app.data.storage.connection import pool
+from typing import AsyncIterator
+
 
 
 logger = logging.getLogger("zeta")
 logger.setLevel(logging.ERROR)
 
-# prevent duplicate handlers if module reloads
 if not any(isinstance(h, logging.FileHandler) for h in logger.handlers):
-    fh = logging.FileHandler(os.path.join("data", "error.log"), mode="a", encoding="utf-8")
+    fh = logging.FileHandler(
+        os.path.join("data", "error.log"),
+        mode="a",
+        encoding="utf-8"
+    )
     fh.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
     fh.setLevel(logging.ERROR)
     logger.addHandler(fh)
-
-
-
+    # initialize application logger
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Server startup
-    yield
-    # Server shutdown
-    pool.close()
-    #print("Database connection pool closed.")
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    """
+    Automatically close database connection pool when the server shuts down.
+    """
 
+    yield
+    pool.close()
 
 
 app = FastAPI(lifespan=lifespan)
+
 
 
 @app.post("/search", description="Search for events")
@@ -84,16 +88,23 @@ async def delete_event(data: Auth[DeleteRequest]) -> Auth[DeleteResponse]:
     return API.delete_event(data)
 
 
-
-
-
-
 @app.exception_handler(DomainException)
-async def handle_domain_error(_: Request, exception: DomainException) -> JSONResponse:
+async def domain_exception_handler(
+    _: Request,
+    exception: DomainException
+) -> JSONResponse:
+    """
+    Handle domain-level exceptions and return a structured error response.
+
+    :param exception: interrupting exception being handled
+    :return: server error response
+    """
+
     if exception.kind == ErrorKind.INTERNAL:
         logger.error(repr(exception), exc_info=exception)
 
     auth_error = API.exception_handler(exception)
+    # generated authenticated error response
 
     return JSONResponse(
         status_code=HTTP_CODE[exception.kind],
@@ -103,6 +114,13 @@ async def handle_domain_error(_: Request, exception: DomainException) -> JSONRes
 
 @app.exception_handler(Exception)
 async def exception_handler(_: Request, exception: Exception) -> JSONResponse:
+    """
+    Handle unexpected exceptions and return a generic internal error response.
+
+    :param exception: interrupting exception being handled
+    :return: server error response
+    """
+
     logger.error(repr(exception), exc_info=exception)
 
     auth_error = API.exception_handler(
@@ -111,6 +129,7 @@ async def exception_handler(_: Request, exception: Exception) -> JSONResponse:
             message="unknwon error"
         )
     )
+    # generated authenticated error response
 
     return JSONResponse(
         status_code=HTTP_CODE[ErrorKind.INTERNAL],

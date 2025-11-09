@@ -7,7 +7,7 @@ Ticket data model.
 
 
 from .event import Event
-from .storage import ticket as ticket_storage
+from .storage import ticket_store
 from app.crypto import hash
 from app.crypto.symmetric import SKC
 from app.error.errors import DomainException, ErrorKind
@@ -50,7 +50,7 @@ class Ticket(BaseModel):
         :return: ticket version validity status
         """
 
-        byte = ticket_storage.get_data_byte(event_id, number)
+        byte = ticket_store.get_data_byte(event_id, number)
 
         if byte is None:
             return DomainException(ErrorKind.NOT_FOUND, "event not found")
@@ -76,7 +76,7 @@ class Ticket(BaseModel):
         :return: ticket model
         """
 
-        number = ticket_storage.issue(event_id)
+        number = ticket_store.issue(event_id)
 
         if number is None:
             raise DomainException(ErrorKind.CONFLICT, "unable to issue ticket")
@@ -116,7 +116,7 @@ class Ticket(BaseModel):
             # tickets with version 0b01111111 can no longer be transferred
             # (version data is maxed out)
         
-        if not ticket_storage.reissue(event_id, number, version):
+        if not ticket_store.reissue(event_id, number, version):
             raise DomainException(ErrorKind.CONFLICT, "ticket transfer failed")
 
         return cls(
@@ -191,7 +191,7 @@ class Ticket(BaseModel):
         Redeem the current ticket.
         """
 
-        if not ticket_storage.redeem(
+        if not ticket_store.redeem(
             self.event_id,
             self.number,
             self.version + REDEEMED_BYTE,
@@ -207,7 +207,7 @@ class Ticket(BaseModel):
         :return: redemption status
         """
 
-        byte = ticket_storage.get_data_byte(self.event_id, self.number)
+        byte = ticket_store.get_data_byte(self.event_id, self.number)
 
         if byte is None:
             return DomainException(ErrorKind.NOT_FOUND, "event not found")

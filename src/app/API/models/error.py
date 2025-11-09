@@ -1,5 +1,5 @@
 """
-HTTP error data packet models.
+HTTP error data packet model.
 
 :author: Max Milazzo
 """
@@ -14,7 +14,7 @@ from typing import Self
 
 class Error(BaseModel):
     """
-    HTTP error server response.
+    HTTP error response.
     """
 
     error: bool = Field(..., description="Error status")
@@ -24,10 +24,10 @@ class Error(BaseModel):
     @classmethod
     def generate(cls, exception: DomainException) -> Self:
         """
-        Generate HTTP error server response.
+        Generate HTTP error response.
 
         :param exception: HTTP exception
-        :return: error server response
+        :return: error response
         """
 
         detail = exception.message

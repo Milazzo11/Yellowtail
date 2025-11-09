@@ -6,7 +6,7 @@ Event data model.
 
 
 
-from .storage import event as event_storage
+from .storage import event_store
 from app.crypto.symmetric import SKC
 from app.error.errors import ErrorKind, DomainException
 
@@ -50,7 +50,7 @@ class Event(BaseModel):
         :return: event key
         """
 
-        key = event_storage.load_event_key(event_id)
+        key = event_store.load_event_key(event_id)
 
         if key is None:
             raise DomainException(ErrorKind.NOT_FOUND, "event not found")
@@ -67,7 +67,7 @@ class Event(BaseModel):
         :return: event owner public key
         """
 
-        public_key = event_storage.load_owner_public_key(event_id)
+        public_key = event_store.load_owner_public_key(event_id)
 
         if public_key is None:
             raise DomainException(ErrorKind.NOT_FOUND, "event not found")
@@ -83,7 +83,7 @@ class Event(BaseModel):
         :param event_id: unique event identifier
         """
 
-        event_storage.delete(event_id)
+        event_store.delete(event_id)
     
 
     @classmethod
@@ -95,7 +95,7 @@ class Event(BaseModel):
         :return: event model
         """
         
-        event = event_storage.load_event(event_id)
+        event = event_store.load_event(event_id)
 
         if event is None:
             raise DomainException(ErrorKind.NOT_FOUND, "event not found")
@@ -113,7 +113,7 @@ class Event(BaseModel):
         :return: list of matching events
         """
 
-        rows = event_storage.search(text, limit)
+        rows = event_store.search(text, limit)
         
         return [cls(**row) for row in rows]
 
@@ -125,4 +125,4 @@ class Event(BaseModel):
         :param owner_public_key: public key of the event creator (owner)
         """
 
-        event_storage.create(self.model_dump(), SKC.key(), owner_public_key)
+        event_store.create(self.model_dump(), SKC.key(), owner_public_key)

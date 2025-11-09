@@ -207,4 +207,4 @@ class RSA:
 
 
 AKC = RSA
-# standard asymmetric key encryption object
+# standard asymmetric key signature object
