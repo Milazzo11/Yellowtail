@@ -4,12 +4,12 @@ Simple demo/testing module (not part of the main project).
 
 
 
-from src.app.API.models import *
-from src.app.data.event import Event
-from src.app.crypto.asymmetric import AKC
-from src.app.util import keys, display
+from app.API.models import *
+from app.data.event import Event
+from app.crypto.asymmetric import AKC
+from app.util import keys, display
 
-from src.app.data.storage.connection import pool
+from app.data.storage.connection import pool
 pool.close()
 
 import time
