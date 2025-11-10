@@ -191,11 +191,9 @@ def delete(event_id: str) -> bool:
     try:
         with pool.connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM event_data WHERE event_id = %s;", (event_id,))
-                # delete non-public event data row
-
                 cur.execute("DELETE FROM events WHERE id = %s;", (event_id,))
                 # delete event row
+                # (event data row cascade deletes)
 
                 return cur.rowcount > 0
             

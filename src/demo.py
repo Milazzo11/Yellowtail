@@ -87,8 +87,6 @@ def scenario_1():
                 name="Tea Party",
                 description="Tea, earl grey, hot",
                 tickets=16,
-                start=time.time(),
-                finish=time.time() + 2_628_00,
                 restricted=False
             )
         ),

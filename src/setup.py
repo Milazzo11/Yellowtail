@@ -10,6 +10,7 @@ from app.util import display, keys
 from config import DATABASE_CREDS
 
 import psycopg
+import time
 
 
 
@@ -74,7 +75,7 @@ def db_setup() -> None:
                     event_key BYTEA NOT NULL,
                     owner_public_key TEXT NOT NULL,
                     state_bytes BYTEA NOT NULL,
-                    FOREIGN KEY (event_id) REFERENCES events (id)
+                    FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE
                 );
             """)
 
@@ -90,6 +91,26 @@ def db_setup() -> None:
     input()
 
 
+def event_cleanup() -> None:
+    """
+    Delete expired events from the database.
+    """
+
+    try:
+        with psycopg.connect(**DATABASE_CREDS) as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM events WHERE finish < %s;", (time.time(),))
+
+        display.clear()
+        print("SUCCESS: Database purge completed")
+
+    except Exception as e:
+        display.clear()
+        print(f"ERROR: Database purge failed --\n{e}")
+
+    input()
+
+
 def main() -> None:
     """
     Program entry point.
@@ -101,8 +122,9 @@ def main() -> None:
     while True:
         print("Ticket Configration Menu\n")
         print("1 - Credits and information")
-        print("2 - Database setup")
-        print("3 - Key setup")
+        print("2 - Database initialization")
+        print("3 - Key initialization")
+        print("4 - Clear expired events")
         print("x - Exit\n")
         # program options
         
@@ -121,6 +143,10 @@ def main() -> None:
             case "3":
                 key_setup()
                 # setup global keys
+
+            case "4":
+                event_cleanup()
+                # delete expired events
 
             case "x":
                 return
