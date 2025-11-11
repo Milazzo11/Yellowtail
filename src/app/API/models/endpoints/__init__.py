@@ -1,13 +1,11 @@
 """
-API models module.
+API endpoint models module.
 
 :author: Max Milazzo
 """
 
 
 
-from .base import Auth, Data
-from .error import Error
 from .search import SearchRequest, SearchResponse
 from .create import CreateRequest, CreateResponse
 from .register import Verification, RegisterRequest, RegisterResponse

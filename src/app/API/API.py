@@ -6,7 +6,8 @@ API request flows.
 
 
 
-from app.API.models import *
+from app.API.models.base import Auth, Data, Error
+from app.API.models.endpoints import *
 from app.error.errors import DomainException
 
 

@@ -3,9 +3,9 @@ Simple demo/testing module (not part of the main project).
 """
 
 
-
-from app.API.models import *
-from app.data.event import Event
+from app.API.models.base import Auth, Data
+from app.API.models.endpoints import *
+from app.data.models.event import Event
 from app.crypto.asymmetric import AKC
 from app.util import keys, display
 
@@ -113,7 +113,7 @@ res = requests.post(SERVER_URL + "/register", json=req); rj_reg = parse_res(res)
 show_req_res("Register Event (Jean-Luc)", req, rj_reg)
 jl_ticket = rj_reg["data"]["content"]["ticket"]
 
-# Spoofed TRANSFER signature (should fail)
+# Spoofed TRANSFER signature (should fail)  [COVERAGE #2-style spoof for transfer already here]
 narr("An attacker forges the transfer signature; the holder identity must be enforced.")
 # Build a correctly-shaped block (for structure)
 _valid_transfer_shape = auth_req(
@@ -183,6 +183,23 @@ req = auth_req(RedeemRequest(event_id=tea_event_id, ticket=geordi_ticket),
 res = requests.post(SERVER_URL + "/redeem", json=req); orf = parse_res(res)
 show_req_res("Owner tries to redeem FOR holder — expect FAIL", req, orf)
 
+# Attempt to stamp BEFORE redemption — should fail  [COVERAGE #1]
+narr("Beverly attempts to stamp the ticket BEFORE redemption — should fail.")
+req = auth_req(
+    VerifyRequest(event_id=tea_event_id, ticket=geordi_ticket, check_public_key=geor_pub, stamp=True),
+    beverly_priv, beverly_pub, VerifyRequest
+).model_dump()
+res = requests.post(SERVER_URL + "/verify", json=req); bad_stamp = parse_res(res)
+show_req_res("Owner STAMP BEFORE Redeem — expect FAIL", req, bad_stamp)
+
+# Tamper ticket ciphertext — should fail integrity check  [COVERAGE #10]
+narr("Tamper with the encrypted ticket blob so integrity check fails.")
+bad_ticket = geordi_ticket[:-1] + ("A" if geordi_ticket[-1] != "A" else "B")
+req = auth_req(RedeemRequest(event_id=tea_event_id, ticket=bad_ticket),
+               geor_priv, geor_pub, RedeemRequest).model_dump()
+res = requests.post(SERVER_URL + "/redeem", json=req); tampered = parse_res(res)
+show_req_res("Redeem with tampered ticket — expect FAIL", req, tampered)
+
 # Proper flow: HOLDER redeem → OWNER stamp
 narr("Geordi redeems his transferred ticket to complete the holder-side path.")
 req = auth_req(RedeemRequest(event_id=tea_event_id, ticket=geordi_ticket),
@@ -205,6 +222,13 @@ req = auth_req(VerifyRequest(event_id=tea_event_id, ticket=geordi_ticket, check_
 res = requests.post(SERVER_URL + "/verify", json=req); v_stamp = parse_res(res)
 show_req_res("Owner Verify with STAMP (Beverly)", req, v_stamp)
 
+# Non-owner attempts to STAMP — should fail  [COVERAGE #2]
+narr("A non-owner attempts to STAMP — should be rejected by permissions.")
+req = auth_req(VerifyRequest(event_id=tea_event_id, ticket=geordi_ticket, check_public_key=geor_pub, stamp=True),
+               rand_priv, rand_pub, VerifyRequest).model_dump()
+res = requests.post(SERVER_URL + "/verify", json=req); non_owner_stamp = parse_res(res)
+show_req_res("Non-owner STAMP — expect FAIL", req, non_owner_stamp)
+
 # Owner verifies AFTER stamp (should see stamped state)
 narr("Beverly verifies again without stamping to confirm stamped state is visible to the owner.")
 req = auth_req(
@@ -222,6 +246,15 @@ req = auth_req(
 ).model_dump()
 res = requests.post(SERVER_URL + "/verify", json=req); v_after_stamp_non_owner = parse_res(res)
 show_req_res("Non-owner Verify AFTER Stamp (no-stamp flag) — should NOT show stamped", req, v_after_stamp_non_owner)
+
+# Transfer AFTER stamp — should fail  [COVERAGE #5]
+narr("Attempt to transfer a stamped ticket — should be blocked.")
+tblk_after = auth_req(Transfer(ticket=geordi_ticket, transfer_public_key=rand_pub),
+                      geor_priv, geor_pub, Transfer)
+treq_after = auth_req(TransferRequest(event_id=tea_event_id, transfer=tblk_after),
+                      rand_priv, rand_pub, TransferRequest).model_dump()
+res = requests.post(SERVER_URL + "/transfer", json=treq_after); tr_after = parse_res(res)
+show_req_res("Transfer AFTER stamp — expect FAIL", treq_after, tr_after)
 
 # Idempotence checks: double redeem (fail), double stamp (no-op/confirm)
 narr("Geordi tries to redeem again to verify a duplicate attempt fails gracefully.")
@@ -273,6 +306,7 @@ req = auth_req(VerifyRequest(event_id=tea_event_id, ticket=jl2_ticket, check_pub
 res = requests.post(SERVER_URL + "/verify", json=req); pcs = parse_res(res)
 show_req_res("Stamp canceled ticket — FAIL", req, pcs)
 
+# This next pair remains as-is to exercise your current behavior; consider failing instead in prod.
 req = auth_req(CancelRequest(event_id=tea_event_id, ticket=geordi_ticket, check_public_key=geor_pub),
                beverly_priv, beverly_pub, CancelRequest).model_dump()
 res = requests.post(SERVER_URL + "/cancel", json=req); csucc = parse_res(res)
@@ -282,7 +316,6 @@ req = auth_req(VerifyRequest(event_id=tea_event_id, ticket=geordi_ticket, check_
                beverly_priv, beverly_pub, VerifyRequest).model_dump()
 res = requests.post(SERVER_URL + "/verify", json=req); pcs = parse_res(res)
 show_req_res("Stamp canceled ticket — FAIL", req, pcs)
-
 
 input("\n> Continue… ")
 
@@ -311,6 +344,13 @@ req = auth_req(CreateRequest(event=evt), deanna_priv, deanna_pub, CreateRequest)
 res = requests.post(SERVER_URL + "/create", json=req); rcreate = parse_res(res)
 show_req_res("Create Restricted Event (Deanna)", req, rcreate)
 counsel_id = rcreate["data"]["content"]["event_id"]
+
+# Cross-event misuse: try to use Tea Party ticket against Counseling event  [COVERAGE #7]
+narr("Try to use a Tea Party ticket against the Counseling event — wrong event should fail.")
+req = auth_req(RedeemRequest(event_id=counsel_id, ticket=geordi_ticket),
+               geor_priv, geor_pub, RedeemRequest).model_dump()
+res = requests.post(SERVER_URL + "/redeem", json=req); cross_evt = parse_res(res)
+show_req_res("Redeem with ticket for different event — expect FAIL", req, cross_evt)
 
 # Replay same signed create — should fail (nonce replay)
 narr("Exact replay of the signed create to confirm nonce replay protection.")
@@ -351,7 +391,6 @@ will_ticket = w_ok["data"]["content"]["ticket"]
 
 # Spoofed VERIFICATION signature (should fail)
 narr("An attacker spoofs the owner's signature on a verification block; registration must be rejected.")
-
 # Create a block with the correct shape (owner/William), but replace its signature with one from the wrong key
 v_template = v_will  # correct shape: owner authorizes William
 v_wrong_sig = auth_req(

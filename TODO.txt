@@ -1,0 +1,2 @@
+- prob move data/event.py and ticket.py into data/models
+- clean up demo code (and improve)

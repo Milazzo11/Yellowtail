@@ -7,7 +7,8 @@ ZETA Server.
 
 
 from app.API import API
-from app.API.models import *
+from app.API.models.base import Auth, Error
+from app.API.models.endpoints import *
 from app.data.storage.connection import pool
 from app.error.errors import ErrorKind, DomainException
 from app.error.map import HTTP_CODE
