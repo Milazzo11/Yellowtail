@@ -3,8 +3,10 @@ Simple demo/testing module (not part of the main project).
 """
 
 
-from app.API.models.base import Auth, Data
+from app.API.models.base.auth import Auth, Data
 from app.API.models.endpoints import *
+from app.API.models.endpoints.register import Verification
+from app.API.models.endpoints.transfer import Transfer
 from app.data.models.event import Event
 from app.crypto.asymmetric import AKC
 from app.util import keys, display

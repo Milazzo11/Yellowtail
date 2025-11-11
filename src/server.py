@@ -103,9 +103,6 @@ async def domain_exception_handler(
     :return: server error response
     """
 
-    if exception.kind == ErrorKind.INTERNAL:
-        logger.error(repr(exception), exc_info=exception)
-
     auth_error = API.exception_handler(exception)
     # generated authenticated error response
 

@@ -6,5 +6,5 @@ API base models module.
 
 
 
-from .auth import Auth, Data
+from .auth import Auth
 from .error import Error

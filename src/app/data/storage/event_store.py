@@ -7,7 +7,6 @@ Event model database integrations.
 
 
 from .connection import pool
-from app.error.errors import DomainException, ErrorKind
 
 from typing import List, Optional
 
@@ -21,16 +20,12 @@ def load_event(event_id: str) -> Optional[dict]:
     :return: event data dictionary or None if not found
     """
 
-    try:
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT * FROM events WHERE id = %s;", (event_id,))
-                row = cur.fetchone()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM events WHERE id = %s;", (event_id,))
+            row = cur.fetchone()
 
-                return dict(row) if row else None
-
-    except Exception as e:
-        raise DomainException(ErrorKind.INTERNAL, "database error") from e
+            return dict(row) if row else None
 
 
 def load_event_key(event_id: str) -> Optional[bytes]:
@@ -41,22 +36,18 @@ def load_event_key(event_id: str) -> Optional[bytes]:
     :return: event ticket granting key or None if not found
     """
 
-    try:
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT event_key FROM event_data WHERE event_id = %s;",
-                    (event_id,)
-                )
-                row = cur.fetchone()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT event_key FROM event_data WHERE event_id = %s;",
+                (event_id,)
+            )
+            row = cur.fetchone()
 
-                if not row or row["event_key"] is None:
-                    return None
+            if not row or row["event_key"] is None:
+                return None
 
-                return bytes(row["event_key"])
-
-    except Exception as e:
-        raise DomainException(ErrorKind.INTERNAL, "database error") from e
+            return bytes(row["event_key"])
 
 
 def load_owner_public_key(event_id: str) -> Optional[str]:
@@ -67,22 +58,18 @@ def load_owner_public_key(event_id: str) -> Optional[str]:
     :return: the event owner's public key or None if not found
     """
 
-    try:
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT owner_public_key FROM event_data WHERE event_id = %s;",
-                    (event_id,)
-                )
-                row = cur.fetchone()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT owner_public_key FROM event_data WHERE event_id = %s;",
+                (event_id,)
+            )
+            row = cur.fetchone()
 
-                if not row or row["owner_public_key"] is None:
-                    return None
+            if not row or row["owner_public_key"] is None:
+                return None
 
-                return str(row["owner_public_key"])
-
-    except Exception as e:
-        raise DomainException(ErrorKind.INTERNAL, "database error") from e
+            return str(row["owner_public_key"])
 
 
 def search(text: str, limit: int) -> List[dict]:
@@ -96,19 +83,15 @@ def search(text: str, limit: int) -> List[dict]:
 
     pattern = f"%{text}%"
 
-    try:
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT * FROM events WHERE name ILIKE %s LIMIT %s;",
-                    (pattern, limit),
-                )
-                rows = cur.fetchall()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT * FROM events WHERE name ILIKE %s LIMIT %s;",
+                (pattern, limit),
+            )
+            rows = cur.fetchall()
 
-                return list(rows)
-            
-    except Exception as e:
-        raise DomainException(ErrorKind.INTERNAL, "database error") from e
+            return list(rows)
 
 
 def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
@@ -122,62 +105,58 @@ def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
 
     state_bytes = b"\x00" * int(event["tickets"])
 
-    try:
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO events (
-                        id,
-                        name,
-                        description,
-                        tickets,
-                        issued,
-                        start,
-                        finish,
-                        restricted
-                    )
-                    VALUES (
-                        %(id)s,
-                        %(name)s,
-                        %(description)s,
-                        %(tickets)s,
-                        %(issued)s,
-                        %(start)s,
-                        %(finish)s,
-                        %(restricted)s
-                    );
-                    """,
-                    event
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO events (
+                    id,
+                    name,
+                    description,
+                    tickets,
+                    issued,
+                    start,
+                    finish,
+                    restricted
                 )
-                # create event row
+                VALUES (
+                    %(id)s,
+                    %(name)s,
+                    %(description)s,
+                    %(tickets)s,
+                    %(issued)s,
+                    %(start)s,
+                    %(finish)s,
+                    %(restricted)s
+                );
+                """,
+                event
+            )
+            # create event row
 
-                cur.execute(
-                    """
-                    INSERT INTO event_data (
-                        event_id,
-                        event_key,
-                        owner_public_key,
-                        state_bytes
-                    )
-                    VALUES (
-                        %(event_id)s,
-                        %(event_key)s,
-                        %(owner_public_key)s,
-                        %(state_bytes)s
-                    );
-                    """,
-                    {
-                        "event_id": event["id"],
-                        "event_key": event_key,
-                        "owner_public_key": owner_public_key,
-                        "state_bytes": state_bytes
-                    },
+            cur.execute(
+                """
+                INSERT INTO event_data (
+                    event_id,
+                    event_key,
+                    owner_public_key,
+                    state_bytes
                 )
-                # create non-public event data row
-
-    except Exception as e:
-        raise DomainException(ErrorKind.INTERNAL, "database error") from e
+                VALUES (
+                    %(event_id)s,
+                    %(event_key)s,
+                    %(owner_public_key)s,
+                    %(state_bytes)s
+                );
+                """,
+                {
+                    "event_id": event["id"],
+                    "event_key": event_key,
+                    "owner_public_key": owner_public_key,
+                    "state_bytes": state_bytes
+                },
+            )
+            # create non-public event data row
 
 
 def delete(event_id: str) -> bool:
@@ -188,14 +167,10 @@ def delete(event_id: str) -> bool:
     :return: deletion success status
     """
 
-    try:
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("DELETE FROM events WHERE id = %s;", (event_id,))
-                # delete event row
-                # (event data row cascade deletes)
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM events WHERE id = %s;", (event_id,))
+            # delete event row
+            # (event data row cascade deletes)
 
-                return cur.rowcount > 0
-            
-    except Exception as e:
-        raise DomainException(ErrorKind.INTERNAL, "database error") from e
+            return cur.rowcount > 0

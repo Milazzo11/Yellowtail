@@ -6,7 +6,7 @@ API request flows.
 
 
 
-from app.API.models.base import Auth, Data, Error
+from app.API.models.base import Auth, Error
 from app.API.models.endpoints import *
 from app.error.errors import DomainException
 
@@ -23,8 +23,7 @@ def search_events(data: Auth[SearchRequest]) -> Auth[SearchResponse]:
     request = data.authenticate()
     response = SearchResponse.generate(request)
 
-    packet = Data[SearchResponse].load(response)
-    return Auth[SearchResponse].load(packet)
+    return Auth[SearchResponse].load(response)
 
 
 def create_event(data: Auth[CreateRequest]) -> Auth[CreateResponse]:
@@ -38,8 +37,7 @@ def create_event(data: Auth[CreateRequest]) -> Auth[CreateResponse]:
     request = data.authenticate()
     response = CreateResponse.generate(request, data.public_key)
     
-    packet = Data[CreateResponse].load(response)
-    return Auth[CreateResponse].load(packet)
+    return Auth[CreateResponse].load(response)
 
 
 def register_user(data: Auth[RegisterRequest]) -> Auth[RegisterResponse]:
@@ -53,8 +51,7 @@ def register_user(data: Auth[RegisterRequest]) -> Auth[RegisterResponse]:
     request = data.authenticate()
     response = RegisterResponse.generate(request, data.public_key)
 
-    packet = Data[RegisterResponse].load(response)
-    return Auth[RegisterResponse].load(packet)
+    return Auth[RegisterResponse].load(response)
 
 
 def transfer_ticket(data: Auth[TransferRequest]) -> Auth[TransferResponse]:
@@ -68,8 +65,7 @@ def transfer_ticket(data: Auth[TransferRequest]) -> Auth[TransferResponse]:
     request = data.authenticate()
     response = TransferResponse.generate(request, data.public_key)
 
-    packet = Data[TransferResponse].load(response)
-    return Auth[TransferResponse].load(packet)
+    return Auth[TransferResponse].load(response)
 
 
 def redeem_ticket(data: Auth[RedeemRequest]) -> Auth[RedeemResponse]:
@@ -83,8 +79,7 @@ def redeem_ticket(data: Auth[RedeemRequest]) -> Auth[RedeemResponse]:
     request = data.authenticate()
     response = RedeemResponse.generate(request, data.public_key)
 
-    packet = Data[RedeemResponse].load(response)
-    return Auth[RedeemResponse].load(packet)
+    return Auth[RedeemResponse].load(response)
 
 
 def verify_redemption(data: Auth[VerifyRequest]) -> Auth[VerifyResponse]:
@@ -98,8 +93,7 @@ def verify_redemption(data: Auth[VerifyRequest]) -> Auth[VerifyResponse]:
     request = data.authenticate()
     response = VerifyResponse.generate(request, data.public_key)
 
-    packet = Data[VerifyResponse].load(response)
-    return Auth[VerifyResponse].load(packet)
+    return Auth[VerifyResponse].load(response)
 
 
 def cancel_ticket(data: Auth[CancelRequest]) -> Auth[CancelResponse]:
@@ -113,8 +107,7 @@ def cancel_ticket(data: Auth[CancelRequest]) -> Auth[CancelResponse]:
     request = data.authenticate()
     response = CancelResponse.generate(request, data.public_key)
 
-    packet = Data[CancelResponse].load(response)
-    return Auth[CancelResponse].load(packet)
+    return Auth[CancelResponse].load(response)
 
 
 def delete_event(data: Auth[DeleteRequest]) -> Auth[DeleteResponse]:
@@ -128,8 +121,7 @@ def delete_event(data: Auth[DeleteRequest]) -> Auth[DeleteResponse]:
     request = data.authenticate()
     response = DeleteResponse.generate(request, data.public_key)
 
-    packet = Data[DeleteResponse].load(response)
-    return Auth[DeleteResponse].load(packet)
+    return Auth[DeleteResponse].load(response)
 
 
 def exception_handler(exception: DomainException) -> Auth[Error]:
@@ -142,5 +134,4 @@ def exception_handler(exception: DomainException) -> Auth[Error]:
 
     response = Error.generate(exception)
 
-    packet = Data[Error].load(response)
-    return Auth[Error].load(packet)
+    return Auth[Error].load(response)

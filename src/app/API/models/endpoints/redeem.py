@@ -6,7 +6,7 @@
 
 
 
-from app.data.ticket import Ticket
+from app.data.models.ticket import Ticket
 
 from pydantic import BaseModel, Field
 from typing import Self

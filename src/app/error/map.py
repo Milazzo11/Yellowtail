@@ -15,6 +15,5 @@ HTTP_CODE = {
     ErrorKind.NOT_FOUND: 404,
     ErrorKind.CONFLICT: 409,
     ErrorKind.PERMISSION: 403,
-    ErrorKind.UNAVAILABLE: 503,
     ErrorKind.INTERNAL: 500
 }

@@ -7,7 +7,6 @@ Ticket model database integrations.
 
 
 from .connection import pool
-from app.error.errors import DomainException, ErrorKind
 
 from typing import Optional
 
@@ -21,28 +20,24 @@ def issue(event_id: str) -> Optional[int]:
     :return: the issued ticket number or None if a ticket cannot be issued
     """
 
-    try:
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    UPDATE events
-                    SET issued = issued + 1
-                    WHERE id = %s
-                        AND issued < tickets
-                    RETURNING issued;
-                    """,
-                    (event_id,)
-                )
-                row = cur.fetchone()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE events
+                SET issued = issued + 1
+                WHERE id = %s
+                    AND issued < tickets
+                RETURNING issued;
+                """,
+                (event_id,)
+            )
+            row = cur.fetchone()
 
-                if not row or row["issued"] is None:
-                    return None
+            if not row or row["issued"] is None:
+                return None
 
-                return int(row["issued"]) - 1
-            
-    except Exception as e:
-        raise DomainException(ErrorKind.INTERNAL, "database error") from e
+            return int(row["issued"]) - 1
 
 
 def reissue(event_id: str, ticket_number: int, version: int) -> bool:
@@ -55,23 +50,19 @@ def reissue(event_id: str, ticket_number: int, version: int) -> bool:
     :return: reissue success status
     """
 
-    try:
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    UPDATE event_data
-                    SET state_bytes = set_byte(state_bytes, %s, %s)
-                    WHERE event_id = %s
-                        AND get_byte(state_bytes, %s) = %s
-                    """,
-                    (ticket_number, version + 1, event_id, ticket_number, version),
-                )
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE event_data
+                SET state_bytes = set_byte(state_bytes, %s, %s)
+                WHERE event_id = %s
+                    AND get_byte(state_bytes, %s) = %s
+                """,
+                (ticket_number, version + 1, event_id, ticket_number, version),
+            )
 
-                return cur.rowcount == 1
-
-    except Exception as e:
-        raise DomainException(ErrorKind.INTERNAL, "database error") from e
+            return cur.rowcount == 1
 
 
 def advance_state(event_id: str, ticket_number: int, data: int, threshold: int) -> bool:
@@ -85,23 +76,19 @@ def advance_state(event_id: str, ticket_number: int, data: int, threshold: int) 
     :return: state update success status
     """
 
-    try:
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    UPDATE event_data
-                    SET state_bytes = set_byte(state_bytes, %s, %s)
-                    WHERE event_id = %s
-                        AND get_byte(state_bytes, %s) < %s
-                    """,
-                    (ticket_number, data, event_id, ticket_number, threshold),
-                )
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE event_data
+                SET state_bytes = set_byte(state_bytes, %s, %s)
+                WHERE event_id = %s
+                    AND get_byte(state_bytes, %s) < %s
+                """,
+                (ticket_number, data, event_id, ticket_number, threshold),
+            )
 
-                return cur.rowcount == 1
-        
-    except Exception as e:
-        raise DomainException(ErrorKind.INTERNAL, "database error") from e
+            return cur.rowcount == 1
 
 
 def load_state_byte(event_id: str, ticket_number: int) -> Optional[int]:
@@ -113,23 +100,19 @@ def load_state_byte(event_id: str, ticket_number: int) -> Optional[int]:
     :return: ticket state data byte or None if not found
     """
 
-    try:
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT get_byte(state_bytes, %s) AS state_byte
-                    FROM event_data
-                    WHERE event_id = %s;
-                    """,
-                    (ticket_number, event_id),
-                )
-                row = cur.fetchone()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT get_byte(state_bytes, %s) AS state_byte
+                FROM event_data
+                WHERE event_id = %s;
+                """,
+                (ticket_number, event_id),
+            )
+            row = cur.fetchone()
 
-        if not row or row["state_byte"] is None:
-            return None
+    if not row or row["state_byte"] is None:
+        return None
 
-        return int(row["state_byte"])
-
-    except Exception as e:
-        raise DomainException(ErrorKind.INTERNAL, "database error") from e
+    return int(row["state_byte"])

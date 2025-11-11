@@ -6,7 +6,7 @@ Event data model.
 
 
 
-from .storage import event_store
+from app.data.storage import event_store
 from app.crypto.symmetric import SKC
 from app.error.errors import ErrorKind, DomainException
 

@@ -91,14 +91,15 @@ class Auth(BaseModel, Generic[T]):
 
 
     @classmethod
-    def load(cls, data: Data[T]) -> Self:
+    def load(cls, content: T) -> Self:
         """
         Sign a data payload and load into an authenticated packet.
 
-        :param data: data payload
+        :param content: content to be loaded and authenticated
         :return: new valid authenticated packet with injected data payload
         """
 
+        data = Data.load(content)
         cipher = AKC(private_key=keys.priv())
 
         return cls(

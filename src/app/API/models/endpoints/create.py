@@ -6,7 +6,7 @@
 
 
 
-from app.data.event import Event
+from app.data.models.event import Event
 
 from pydantic import BaseModel, Field
 from typing import Self

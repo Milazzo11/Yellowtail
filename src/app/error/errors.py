@@ -20,7 +20,6 @@ class ErrorKind(str, Enum):
     NOT_FOUND = "not_found"
     CONFLICT = "conflict"
     PERMISSION = "permission_denied"
-    UNAVAILABLE = "unavailable"
     INTERNAL = "internal"
 
 
@@ -31,5 +30,5 @@ class DomainException(Exception):
     Custom domain error.
     """
 
-    kind: ErrorKind = ErrorKind.INTERNAL
+    kind: ErrorKind
     message: str = ""

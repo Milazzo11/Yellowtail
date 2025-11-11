@@ -7,7 +7,7 @@ Ticket data model.
 
 
 from .event import Event
-from .storage import ticket_store
+from app.data.storage import ticket_store
 from app.crypto import hash
 from app.crypto.symmetric import SKC
 from app.error.errors import DomainException, ErrorKind
