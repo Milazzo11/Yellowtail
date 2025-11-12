@@ -74,7 +74,7 @@ geordi = AKC()
 
 print(
     "After what seems like a lifetime of practice, Jean-Luc is excited to " \
-    'show off his flute skills, so he creates a new event "Flute Recital."'
+    'show off his flute skills, so he creates a new event: "Flute Recital."'
 )
 
 req = Auth[CreateRequest].load(
@@ -99,7 +99,10 @@ event_id = res.json()["data"]["content"]["event_id"]
 print("Beverly wants to see him play, so she searches for the event.")
 
 req = Auth[SearchRequest].load(
-    SearchRequest(text="flute", mode="text"),
+    SearchRequest(
+        text="flute",
+        mode="text"
+    ),
     beverly.private_key,
     beverly.public_key
 ).model_dump()
@@ -111,7 +114,9 @@ output(req, Auth[SearchResponse](**res.json()), res.status_code)
 print("And now that she has the event ID, she registers for the recital.")
 
 req = Auth[RegisterRequest].load(
-    RegisterRequest(event_id=event_id), 
+    RegisterRequest(
+        event_id=event_id
+    ), 
     beverly.private_key,
     beverly.public_key
 ).model_dump()
@@ -180,21 +185,101 @@ geordi_ticket = res.json()["data"]["content"]["ticket"]
 
 ##########
 
+print(
+    "Wesley isn't willing to give up so easily, though... so he steals " \
+    "his mother's old ticket and digital signature credentials while she " \
+    "is distracted and manages to slip out before his scheduled beating can " \
+    "begin.  Oblivious to the fact that the ticket he has was transrrered" \
+    "away, he shows up to the recital and attempts to redeem it."
+)
 
-"""
+req = Auth[RedeemRequest].load(
+    RedeemRequest(
+        event_id=event_id,
+        ticket=beverly_ticket
+    ),
+    beverly.private_key,
+    beverly.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/redeem", json=req)
+output(req, Auth[Error](**res.json()), res.status_code)
 
-# Jean-Luc tries to redeem old (transferred) ticket — should fail
-print("Jean-Luc tries redeeming his old ticket to confirm the system rejects post-transfer use.")
-req = auth_req(RedeemRequest(event_id=event_id, ticket=jl_ticket), jean_priv, jean_pub, RedeemRequest).model_dump()
-res = requests.post(SERVER_URL + "/redeem", json=req); rr = parse_res(res)
-show_req_res("Redeem Old Transferred Ticket — expect FAIL", req, rr)
+##########
 
-# Double-transfer attempt — should fail
-print("Jean-Luc tries transferring the same ticket again to see that double-transfer is blocked.")
-tblk2 = auth_req(Transfer(ticket=jl_ticket, transfer_public_key=geor_pub), jean_priv, jean_pub, Transfer)
-treq2 = auth_req(TransferRequest(event_id=event_id, transfer=tblk2), geor_priv, geor_pub, TransferRequest).model_dump()
-res = requests.post(SERVER_URL + "/transfer", json=treq2); tr2 = parse_res(res)
-show_req_res("Transfer Again Same Ticket — expect FAIL", treq2, tr2)
+print(
+    "Still not ready to concede, Wesley comes up with a new ingenious plan: " \
+    "He will simply transfer his mom's non-functional ticket to himself, " \
+    "and then surely everything will work for him."
+)
+
+req = Auth[TransferRequest].load(
+    Transfer(
+        ticket=beverly_ticket,
+        transfer_public_key=wesley.public_key
+    ), 
+    beverly.private_key,
+    beverly.public_key
+).model_dump()
+res = requests.post(SERVER_URL + "/transfer", json=req)
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
+
+# Wesley does /verify to see if there is anyone who hasn't redeemed (explain why it exists)
+print(
+    "A bit frustrated now, he sees Geordi about to enter the recital.  " \
+    "He quickly steals a copy of Geordi's ticket and public key to check if " \
+    "it has already been redeemed.  This endpoint is available to all users " \
+    "to promote transfer transparency... but Wesley plans to use it for evil!"
+)
+
+# Jean-Luc attempts to redeem for Geordi
+print(
+    "Upon seeing Geordi, Jean-Luc gets so excited that he takes Geordi's " \
+    "ticket and tries to make a redemption request for him."
+)
+
+# Jean-Luc tries to skip redeem and just stamp Geordi's ticket
+print(
+    '"No matter," he thinks; he will simply skip redemption and proceed to ' \
+    "ticket verification and stamping.  So Jean-Luc makes a verification/" \
+    "stamping request in an attempt to confirm and mark Geordi as admitted."
+)
+
+# Geoerdi tries to redeem, but Wesley messes up ticket ciphertext bits
+print(
+    "Geordi finally makes the redemption request himself... however, Wesley " \
+    "attempts to jam the signal, and the request reaches the server with a " \
+    "few of the encrypted ticket ciphertext bytes mixed up."
+)
+
+# Geordi redeems for himself
+print(
+    "Unsure what had just happened, Geordi retries the redemption.  And " \
+    "thankfully for him, Wesley's signal jammer just ran out of power, " \
+    "so his request reaches the server unaltered."
+)
+
+# Now Geordi attempts to stamp his own ticket (which fails obviously)
+print("Without thinking, Geordi then attempts to stamp his own ticket.")
+
+# Jean-Luc verifies with stamp
+print("Finally, Jean-Luc sends a proper verify/stamp request to admit Geordi")
+
+# Jean-Luc stamps again, with a failure message that the ticket is already stamped
+print("...And just to make sure, he stamps it for a second time too!")
+
+# Wesley does /verify again and see if ticket has been redeemed
+print(
+    "Realizing that his plan is most likely now foiled, Wesley performs " \
+    "another verification request to see the status of Geordi's ticket.  " \
+    "He should be able to see if it is redeemed, but he won't know whether " \
+    "or not Geordi was stamped and admitted."
+)
+
+
+
+
 
 # (Testing-only) Owner verify BEFORE redemption — not needed in real flow
 print("Beverly performs a pre-redeem verify for testing; in practice stamping later is enough to prevent reuse.")
@@ -281,6 +366,50 @@ req = auth_req(
 res = requests.post(SERVER_URL + "/verify", json=req); v_after_stamp_non_owner = parse_res(res)
 show_req_res("Non-owner Verify AFTER Stamp (no-stamp flag) — should NOT show stamped", req, v_after_stamp_non_owner)
 
+
+#$$$$$
+
+#
+print(
+    "Furious at Wesley, but unable to find him, Beverly decides she is going " \
+    "to attend the recital after all in an attempt to calm herself down.  " \
+    "She calls up Geordi to ask for her ticket back, and he signs and sends "
+    "her a transfer validation block.  She submits the request... but " \
+    "doesn't know that Geordi's ticket has already been redeemed and stamped."
+)
+
+
+#
+print(
+    "Beverly is now livid at the situation, forcing Geordi to leave the " \
+    "event to go and comfort her.  And upon his return, Geordi attempts to " \
+    "re-redeem his ticket to streamline getting back inside before the show " \
+    "starts."
+)
+
+
+print(
+    "Jean-Luc knows that Geordi was at the event, so even though he can't " \
+    "re-redeem, he decides to just try and stamp Geordi's ticket for a "
+    "second time so he is defintiely marked as admitted."
+)
+
+
+print(
+    "Meanwhile, Wesley has finally realized that instead of trying to steal " \
+    "other people's tickets and credentials, he can simply register himself."
+)
+
+# Beverly tries to cancel his ticket
+
+# She tells Jean-Luc and he cancels it when he shows up at the event
+
+# Wesley attempts to redeem and transfer
+
+# Wesley dresses up in a disguise and asks Jean-Luc to stamp his ticket -- which fails
+
+
+
 # Transfer AFTER stamp — should fail  [COVERAGE #5]
 print("Attempt to transfer a stamped ticket — should be blocked.")
 tblk_after = auth_req(Transfer(ticket=geordi_ticket, transfer_public_key=rand_pub),
@@ -303,6 +432,8 @@ req = auth_req(VerifyRequest(event_id=event_id, ticket=geordi_ticket, check_publ
 res = requests.post(SERVER_URL + "/verify", json=req); st2 = parse_res(res)
 show_req_res("Stamp again — expect no-op/confirm stamped", req, st2)
 
+
+### Wesley makes this ticket
 # Cancellation: fresh ticket → non-owner cancel fail → owner cancel success → post-cancel denials
 print("Jean-Luc takes a fresh ticket to test cancellation flows.")
 req = auth_req(RegisterRequest(event_id=event_id), jean_priv, jean_pub, RegisterRequest).model_dump()
@@ -534,5 +665,3 @@ res = requests.post(SERVER_URL + "/search", json=req); s2 = parse_res(res)
 show_req_res("Search by ID AFTER delete (gone)", req, s2)
 
 print("\nTHE END — Demo complete.\n")
-
-"""
