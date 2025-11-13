@@ -7,6 +7,7 @@ Demo/testing module.
 
 
 from app.API.models.base import Auth, Error
+from app.API.models.base.auth import TIMESTAMP_ERROR
 from app.API.models.endpoints import *
 from app.API.models.endpoints.register import Verification
 from app.API.models.endpoints.transfer import Transfer
@@ -24,10 +25,6 @@ from typing import TypeVar
 
 SERVER_URL = "http://localhost:8000"
 # server URL
-
-
-TIMESTAMP_ERROR = 10
-# timestamp error allowance for response
 
 
 T = TypeVar("T")
@@ -48,7 +45,7 @@ def output(req: dict, res: Auth[T], code: int) -> None:
     print()
 
     input("> ")
-    print()
+    display.clear()
 
 
 ##########
@@ -90,7 +87,7 @@ req = Auth[CreateRequest].load(
 res = requests.post(SERVER_URL + "/create", json=req.model_dump())
 output(req, Auth[CreateResponse](**res.json()), res.status_code)
 
-event_id = res.json()["data"]["content"]["event_id"]
+event_id_1 = res.json()["data"]["content"]["event_id"]
 
 ##########
 
@@ -113,7 +110,7 @@ print("And now that she has the event ID, she registers for the recital.")
 
 req = Auth[RegisterRequest].load(
     RegisterRequest(
-        event_id=event_id
+        event_id=event_id_1
     ), 
     beverly.private_key,
     beverly.public_key
@@ -134,7 +131,7 @@ print(
 
 req = Auth[TransferRequest].load(
     TransferRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         transfer=Auth[Transfer].load(
             Transfer(
                 ticket=beverly_ticket,
@@ -163,7 +160,7 @@ print(
 
 req = Auth[TransferRequest].load(
     TransferRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         transfer=Auth[Transfer].load(
             Transfer(
                 ticket=beverly_ticket,
@@ -193,7 +190,7 @@ print(
 
 req = Auth[RedeemRequest].load(
     RedeemRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=beverly_ticket
     ),
     beverly.private_key,
@@ -212,7 +209,7 @@ print(
 
 req = Auth[TransferRequest].load(
     TransferRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         transfer=Auth[Transfer].load(
             Transfer(
                 ticket=beverly_ticket,
@@ -240,7 +237,7 @@ print(
 
 req = Auth[VerifyRequest].load(
     VerifyRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=geordi_ticket,
         check_public_key=geordi.public_key
     ),
@@ -259,7 +256,7 @@ print(
 
 req = Auth[RedeemRequest].load(
     RedeemRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=geordi_ticket
     ),
     jean_luc.private_key,
@@ -278,7 +275,7 @@ print(
 
 req = Auth[VerifyRequest].load(
     VerifyRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=geordi_ticket,
         check_public_key=geordi.public_key,
         stamp=True
@@ -301,7 +298,7 @@ bad_ticket = geordi_ticket[:-1] + ("A" if geordi_ticket[-1] != "A" else "B")
 
 req = Auth[RedeemRequest].load(
     RedeemRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=bad_ticket
     ),
     geordi.private_key,
@@ -320,7 +317,7 @@ print(
 
 req = Auth[RedeemRequest].load(
     RedeemRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=geordi_ticket
     ),
     geordi.private_key,
@@ -335,7 +332,7 @@ print("Without thinking, Geordi then attempts to stamp his own ticket.")
 
 req = Auth[VerifyRequest].load(
     VerifyRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=geordi_ticket,
         check_public_key=geordi.public_key,
         stamp=True
@@ -352,7 +349,7 @@ print("Finally, Jean-Luc sends a proper verify/stamp request to admit Geordi")
 
 req = Auth[VerifyRequest].load(
     VerifyRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=geordi_ticket,
         check_public_key=geordi.public_key,
         stamp=True
@@ -369,7 +366,7 @@ print("...And just to make sure, he stamps it for a second time too!")
 
 req = Auth[VerifyRequest].load(
     VerifyRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=geordi_ticket,
         check_public_key=geordi.public_key,
         stamp=True
@@ -391,7 +388,7 @@ print(
 
 req = Auth[VerifyRequest].load(
     VerifyRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=geordi_ticket,
         check_public_key=geordi.public_key
     ),
@@ -413,7 +410,7 @@ print(
 
 req = Auth[TransferRequest].load(
     TransferRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         transfer=Auth[Transfer].load(
             Transfer(
                 ticket=geordi_ticket,
@@ -440,7 +437,7 @@ print(
 
 req = Auth[RedeemRequest].load(
     RedeemRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=geordi_ticket
     ),
     geordi.private_key,
@@ -458,7 +455,7 @@ print(
 
 req = Auth[RegisterRequest].load(
     RegisterRequest(
-        event_id=event_id
+        event_id=event_id_1
     ), 
     wesley.private_key,
     wesley.public_key
@@ -477,7 +474,7 @@ print(
 
 req = Auth[CancelRequest].load(
     CancelRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=wesley_ticket,
         check_public_key=wesley.public_key
     ),
@@ -496,7 +493,7 @@ print(
 
 req = Auth[CancelRequest].load(
     CancelRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=wesley_ticket,
         check_public_key=wesley.public_key
     ),
@@ -512,7 +509,7 @@ print("Wesley then tries to redeem his new ticket, not knowing it was canceled."
 
 req = Auth[RedeemRequest].load(
     RedeemRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=wesley_ticket
     ),
     wesley.private_key,
@@ -530,7 +527,7 @@ print(
 
 req = Auth[TransferRequest].load(
     TransferRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         transfer=Auth[Transfer].load(
             Transfer(
                 ticket=wesley_ticket,
@@ -556,7 +553,7 @@ print(
 
 req = Auth[VerifyRequest].load(
     VerifyRequest(
-        event_id=event_id,
+        event_id=event_id_1,
         ticket=wesley_ticket,
         check_public_key=wesley.public_key
     ),
@@ -573,42 +570,338 @@ print(
     'recital.  He creates an event: "Jazz Trombone" -- but marks it as ' \
     "\"restricted\" after hearing about Wesley's antics at the last recital..."
 )
-# 2 ticks
 
-# Wesley replays William's request to server to try and geta  duplicate event to cause confusion 
-# -- noce repeat
-# he waitas until the server forgets the nonce and treies again -- timestamp error
-# he tries to manipulate the data and resent -- sig verif fail
+req = Auth[CreateRequest].load(
+    CreateRequest(
+        event=Event(
+            name="Jazz Trombone",
+            description="Any jazz except Dixieland",
+            tickets=2,
+            restricted=True
+        )
+    ),
+    william.private_key,
+    william.public_key
+)
+res = requests.post(SERVER_URL + "/create", json=req.model_dump())
+output(req, Auth[CreateResponse](**res.json()), res.status_code)
 
-# Jean-luc's event hasn tbeen cleared from the system yet as the finish date was set too far out -- Wesley registers for it
+event_id_2 = res.json()["data"]["content"]["event_id"]
 
-# Wesley tries using his ticket for Picards event to join Rikers event (fails)
+##########
 
-# Deanna tries to register (has no verif)
+print(
+    "Wesley still wants to wreak as much havoc as humanly possible, though, " \
+    "so he interecepts and replays Williams creation request."
+)
 
-# Deanna registers again successfully (with verif + METADATA)
+res = requests.post(SERVER_URL + "/create", json=req.model_dump())
+output(req, Auth[Error](**res.json()), res.status_code)
 
-# Wesley tries to spoof the (sig on) register validation block (he fails)
+##########
 
-# Wesley intercepts and tries to use Deanna's verification block to register (he fails)
+print("He waits until the server forgets about the request nonce and tries again.")
 
-# Beverly registers successsfully, filling the event
+req.data.timestamp -= TIMESTAMP_ERROR
+res = requests.post(SERVER_URL + "/create", json=req.model_dump())
+output(req, Auth[Error](**res.json()), res.status_code)
+# timestamp error triggers before any other checks
 
+##########
+
+print(
+    "Finally, he makes one final attempt and alters the nonce and timestamp " \
+    "data before making another request."
+)
+
+req.data.nonce = str(uuid.uuid4())
+req.data.timestamp = time.time()
+res = requests.post(SERVER_URL + "/create", json=req.model_dump())
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
+
+print(
+    "Wesley has a new idea now, though... he knows Jean-Luc's old event has " \
+    "not yet been removed from the system, and so he registers a new ticket."
+)
+
+req = Auth[RegisterRequest].load(
+    RegisterRequest(
+        event_id=event_id_1
+    ), 
+    wesley.private_key,
+    wesley.public_key
+)
+res = requests.post(SERVER_URL + "/register", json=req.model_dump())
+output(req, Auth[RegisterResponse](**res.json()), res.status_code)
+
+wesley_ticket = res.json()["data"]["content"]["ticket"]
+
+##########
+
+print("He then uses this ticket to try and redeem for William's new event.")
+
+req = Auth[RedeemRequest].load(
+    RedeemRequest(
+        event_id=event_id_2,
+        ticket=wesley_ticket
+    ),
+    wesley.private_key,
+    wesley.public_key
+)
+res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
+
+print(
+    "Deanna, William's wife, also wants to attend the event.  She doesn't " \
+    "know about the verification requirements, so she attempts to just " \
+    "register without it."
+)
+
+req = Auth[RegisterRequest].load(
+    RegisterRequest(
+        event_id=event_id_2
+    ), 
+    deanna.private_key,
+    deanna.public_key
+)
+res = requests.post(SERVER_URL + "/register", json=req.model_dump())
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
+
+print(
+    "William signs a registration verification block for Deanna, and he " \
+    "includes custom metadata to be embedded into her ticket.  Deanna then " \
+    "uses this to register for the event."
+)
+
+deanna_verification = Auth[Verification].load(
+    Verification(
+        event_id=event_id_2,
+        public_key=deanna.public_key,
+        metadata="Imzadi <3"
+    ),
+    william.private_key,
+    william.public_key
+)
+
+req = Auth[RegisterRequest].load(
+    RegisterRequest(
+        event_id=event_id_2,
+        verification=deanna_verification
+    ), 
+    deanna.private_key,
+    deanna.public_key
+)
+res = requests.post(SERVER_URL + "/register", json=req.model_dump())
+output(req, Auth[RegisterResponse](**res.json()), res.status_code)
+
+deanna_ticket = res.json()["data"]["content"]["ticket"]
+
+##########
+
+print(
+    "Wesley intercepts this network traffic, however, and he attempts to " \
+    "use Deanna's verification block to register a ticket for himself."
+)
+
+req = Auth[RegisterRequest].load(
+    RegisterRequest(
+        event_id=event_id_2,
+        verification=deanna_verification
+    ), 
+    wesley.private_key,
+    wesley.public_key
+)
+res = requests.post(SERVER_URL + "/register", json=req.model_dump())
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
+
+print("Undeterred, he tries to sign his own verification block to register with...")
+
+req = Auth[RegisterRequest].load(
+    RegisterRequest(
+        event_id=event_id_2,
+        verification=Auth[Verification].load(
+            Verification(
+                event_id=event_id_2,
+                public_key=wesley.public_key,
+                metadata="Imzadi <3"
+            ),
+            wesley.private_key,
+            wesley.public_key
+        )
+    ), 
+    wesley.private_key,
+    wesley.public_key
+)
+res = requests.post(SERVER_URL + "/register", json=req.model_dump())
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
+
+print(
+    '"What about if I spoof the siagnature?" he thinks -- and so he creates ' \
+    "a request with a new verification block: signed by him but with " \
+    "William's public key attached."
+)
+
+req = Auth[RegisterRequest].load(
+    RegisterRequest(
+        event_id=event_id_2,
+        verification=Auth[Verification].load(
+            Verification(
+                event_id=event_id_2,
+                public_key=wesley.public_key,
+                metadata="Imzadi <3"
+            ),
+            wesley.private_key,
+            william.public_key
+        )
+    ), 
+    wesley.private_key,
+    wesley.public_key
+)
+res = requests.post(SERVER_URL + "/register", json=req.model_dump())
+output(req, Auth[Error](**res.json()), res.status_code)
+
+##########
+
+print(
+    "Meanwhile, William has given Beverly a legitamite verification block, " \
+    "and she registers for the event -- claiming the last available ticket."
+)
+
+req = Auth[RegisterRequest].load(
+    RegisterRequest(
+        event_id=event_id_2,
+        verification=Auth[Verification].load(
+            Verification(
+                event_id=event_id_2,
+                public_key=beverly.public_key
+            ),
+            william.private_key,
+            william.public_key
+        )
+    ), 
+    beverly.private_key,
+    beverly.public_key
+)
+res = requests.post(SERVER_URL + "/register", json=req.model_dump())
+output(req, Auth[RegisterResponse](**res.json()), res.status_code)
+
+beverly_ticket = res.json()["data"]["content"]["ticket"]
+
+##########
+
+
+print(
+    "Wesley has had enough.  He breaks into William's office, steals his " \
+    "credentials, and issues himself a valid registration verification " \
+    "block.  He then attampets to register using this, unaware that the " \
+    'recital is already "sold out."'
+)
 # Wesley steals William's credentials and secretly issues himself a verification... but the event is full when he registers
 
-# Deanna redeems her ticket
+req = Auth[RegisterRequest].load(
+    RegisterRequest(
+        event_id=event_id_2,
+        verification=Auth[Verification].load(
+            Verification(
+                event_id=event_id_2,
+                public_key=wesley.public_key
+            ),
+            william.private_key,
+            william.public_key
+        )
+    ), 
+    wesley.private_key,
+    wesley.public_key
+)
+res = requests.post(SERVER_URL + "/register", json=req.model_dump())
+output(req, Auth[Error](**res.json()), res.status_code)
 
-# William verifs and stamps it -- AND he can see metadata
+##########
 
+print("Showing up to the event, Deanna redeems her ticket.")
+
+req = Auth[RedeemRequest].load(
+    RedeemRequest(
+        event_id=event_id_2,
+        ticket=deanna_ticket
+    ),
+    deanna.private_key,
+    deanna.public_key
+)
+res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
+output(req, Auth[RedeemResponse](**res.json()), res.status_code)
+
+##########
+
+print(
+    "William verifies and stamps her ticket to confirm admittance, and he " \
+    "can see the custom metadata that he had set earlier."
+)
+
+req = Auth[VerifyRequest].load(
+    VerifyRequest(
+        event_id=event_id_2,
+        ticket=beverly_ticket,
+        check_public_key=beverly.public_key,
+        stamp=True
+    ),
+    william.private_key,
+    william.public_key
+)
+res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
+output(req, Auth[VerifyResponse](**res.json()), res.status_code)
+
+##########
+
+print(
+    "But, oh no... Jean-Luc just called William to deal with an impending " \
+    "emergency, and he has to cancel his event.  He quickly makes the " \
+    "deletion request before heading off to handle the problem."
+)
 # At the last minute, Jean-Luc calls on William to deal with an imdending emergency, so he has to cancel the event -- he does /delete
 
+print(
+    "Beverly didn't hear about any emergency, though, and so she attempts " \
+    "to redeem her ticket as normal."
+)
 # Beverly unknowingly redeems for it, but it fails
 
+print(
+    "After dealing with the emergecy, William gets back to his office and " \
+    'decides to do some "spring cleaning" -- making a requets to delete ' \
+    "Jean-Luc's old event from the server."
+)
 # William tries to delete Jean Luc's old event too (fails)
 
+print("William calls up Jean-Luc, and he then makes the deletion request for his event.")
 # Jean-Luc deletes his own event
 
+print(
+    "Wesley is exhausted at this point, but decides to search for William's " \
+    "event to see if he can figure out what the heck is even going on."
+)
 # Wesley wants to know what's going on so he searches for Will's event but nothing shows up
+
+print("Maybe Jean-Luc's event is still there, though, he thinks?")
+
+
+
+
+print("Wesley gives up and goes to bed.")
+print("The end.")
+
+
+
 
 
 
