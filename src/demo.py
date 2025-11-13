@@ -6,20 +6,19 @@ Demo/testing module.
 
 
 
-from app.API.models.base import Auth, Error
+from app.API.models.base import Auth, ErrorResponse
 from app.API.models.base.auth import TIMESTAMP_ERROR
 from app.API.models.endpoints import *
 from app.API.models.endpoints.register import Verification
 from app.API.models.endpoints.transfer import Transfer
-from app.data.models.event import Event
 from app.crypto.asymmetric import AKC
+from app.data.models.event import Event
 from app.util import display
 
+import requests
 import time
 import uuid
-import copy
-import requests
-from typing import TypeVar
+from typing import Any
 
 
 
@@ -27,21 +26,22 @@ SERVER_URL = "http://localhost:8000"
 # server URL
 
 
-T = TypeVar("T")
 
-
-
-def output(req: dict, res: Auth[T], code: int) -> None:
+def output(request: Auth[Any], response: Auth[Any], status_code: int) -> None:
     """
     Compact request/response logging with STATUS first and an auth verdict.
+
+    :param request: the original request
+    :param response: the server response
+    :param status_code: HTTP response status code
     """
 
-    res.authenticate()
+    response.authenticate()
     
     print("====================")
-    print(f"STATUS: {code}")
-    print("\nREQUEST:", req)
-    print("\nRESPONSE:", res.model_dump())
+    print("STATUS:", status_code)
+    print("\nREQUEST:", request.model_dump())
+    print("\nRESPONSE:", response.model_dump())
     print()
 
     input("> ")
@@ -145,7 +145,7 @@ req = Auth[TransferRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -197,7 +197,7 @@ req = Auth[RedeemRequest].load(
     beverly.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -223,7 +223,7 @@ req = Auth[TransferRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 
 ##########
@@ -263,7 +263,7 @@ req = Auth[RedeemRequest].load(
     jean_luc.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -284,7 +284,7 @@ req = Auth[VerifyRequest].load(
     jean_luc.public_key
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -305,7 +305,7 @@ req = Auth[RedeemRequest].load(
     geordi.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -341,7 +341,7 @@ req = Auth[VerifyRequest].load(
     geordi.public_key
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -375,7 +375,7 @@ req = Auth[VerifyRequest].load(
     jean_luc.public_key
 )
 res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -424,7 +424,7 @@ req = Auth[TransferRequest].load(
     beverly.public_key
 )
 res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -444,7 +444,7 @@ req = Auth[RedeemRequest].load(
     geordi.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -482,7 +482,7 @@ req = Auth[CancelRequest].load(
     beverly.public_key
 )
 res = requests.post(SERVER_URL + "/cancel", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -516,7 +516,7 @@ req = Auth[RedeemRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -539,9 +539,9 @@ req = Auth[TransferRequest].load(
     ),
     wesley.private_key,
     wesley.public_key
-).model_dump()
-res = requests.post(SERVER_URL + "/transfer", json=req)
-output(req, Auth[Error](**res.json()), res.status_code)
+)
+res = requests.post(SERVER_URL + "/transfer", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -559,9 +559,9 @@ req = Auth[VerifyRequest].load(
     ),
     jean_luc.private_key,
     jean_luc.public_key
-).model_dump()
-res = requests.post(SERVER_URL + "/verify", json=req)
-output(req, Auth[Error](**res.json()), res.status_code)
+)
+res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -592,11 +592,11 @@ event_id_2 = res.json()["data"]["content"]["event_id"]
 
 print(
     "Wesley still wants to wreak as much havoc as humanly possible, though, " \
-    "so he interecepts and replays Williams creation request."
+    "so he interecepts and replays William's creation request."
 )
 
 res = requests.post(SERVER_URL + "/create", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -604,7 +604,7 @@ print("He waits until the server forgets about the request nonce and tries again
 
 req.data.timestamp -= TIMESTAMP_ERROR
 res = requests.post(SERVER_URL + "/create", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 # timestamp error triggers before any other checks
 
 ##########
@@ -617,7 +617,7 @@ print(
 req.data.nonce = str(uuid.uuid4())
 req.data.timestamp = time.time()
 res = requests.post(SERVER_URL + "/create", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -651,7 +651,7 @@ req = Auth[RedeemRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -669,7 +669,7 @@ req = Auth[RegisterRequest].load(
     deanna.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -718,7 +718,7 @@ req = Auth[RegisterRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -741,7 +741,7 @@ req = Auth[RegisterRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -768,7 +768,7 @@ req = Auth[RegisterRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -806,7 +806,6 @@ print(
     "block.  He then attampets to register using this, unaware that the " \
     'recital is already "sold out."'
 )
-# Wesley steals William's credentials and secretly issues himself a verification... but the event is full when he registers
 
 req = Auth[RegisterRequest].load(
     RegisterRequest(
@@ -824,7 +823,7 @@ req = Auth[RegisterRequest].load(
     wesley.public_key
 )
 res = requests.post(SERVER_URL + "/register", json=req.model_dump())
-output(req, Auth[Error](**res.json()), res.status_code)
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
 ##########
 
@@ -851,8 +850,8 @@ print(
 req = Auth[VerifyRequest].load(
     VerifyRequest(
         event_id=event_id_2,
-        ticket=beverly_ticket,
-        check_public_key=beverly.public_key,
+        ticket=deanna_ticket,
+        check_public_key=deanna.public_key,
         stamp=True
     ),
     william.private_key,
@@ -868,229 +867,102 @@ print(
     "emergency, and he has to cancel his event.  He quickly makes the " \
     "deletion request before heading off to handle the problem."
 )
-# At the last minute, Jean-Luc calls on William to deal with an imdending emergency, so he has to cancel the event -- he does /delete
+
+req = Auth[DeleteRequest].load(
+    DeleteRequest(
+        event_id=event_id_2
+    ),
+    william.private_key,
+    william.public_key
+)
+res = requests.post(SERVER_URL + "/delete", json=req.model_dump())
+output(req, Auth[DeleteResponse](**res.json()), res.status_code)
+
+##########
 
 print(
     "Beverly didn't hear about any emergency, though, and so she attempts " \
     "to redeem her ticket as normal."
 )
-# Beverly unknowingly redeems for it, but it fails
+
+req = Auth[RedeemRequest].load(
+    RedeemRequest(
+        event_id=event_id_2,
+        ticket=beverly_ticket
+    ),
+    beverly.private_key,
+    beverly.public_key
+)
+res = requests.post(SERVER_URL + "/redeem", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+
+##########
 
 print(
     "After dealing with the emergecy, William gets back to his office and " \
     'decides to do some "spring cleaning" -- making a requets to delete ' \
     "Jean-Luc's old event from the server."
 )
-# William tries to delete Jean Luc's old event too (fails)
+
+req = Auth[DeleteRequest].load(
+    DeleteRequest(
+        event_id=event_id_1,
+    ),
+    william.private_key,
+    william.public_key
+)
+res = requests.post(SERVER_URL + "/delete", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+
+##########
 
 print("William calls up Jean-Luc, and he then makes the deletion request for his event.")
-# Jean-Luc deletes his own event
+
+
+req = Auth[DeleteRequest].load(
+    DeleteRequest(
+        event_id=event_id_1,
+    ),
+    jean_luc.private_key,
+    jean_luc.public_key
+)
+res = requests.post(SERVER_URL + "/delete", json=req.model_dump())
+output(req, Auth[DeleteResponse](**res.json()), res.status_code)
+
+##########
 
 print(
     "Wesley is exhausted at this point, but decides to search for William's " \
     "event to see if he can figure out what the heck is even going on."
 )
-# Wesley wants to know what's going on so he searches for Will's event but nothing shows up
+
+req = Auth[SearchRequest].load(
+    SearchRequest(
+        text=event_id_2,
+        mode="id"
+    ),
+    wesley.private_key,
+    wesley.public_key
+)
+res = requests.post(SERVER_URL + "/search", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
+
+##########
 
 print("Maybe Jean-Luc's event is still there, though, he thinks?")
 
+req = Auth[SearchRequest].load(
+    SearchRequest(
+        text=event_id_1,
+        mode="id"
+    ),
+    wesley.private_key,
+    wesley.public_key
+)
+res = requests.post(SERVER_URL + "/search", json=req.model_dump())
+output(req, Auth[ErrorResponse](**res.json()), res.status_code)
 
-
+##########
 
 print("Wesley gives up and goes to bed.")
 print("The end.")
-
-
-
-
-
-
-
-
-# =========================== ACT II ===========================
-display.clear()
-print("ACT II — Restricted session with verification blocks, replay/tamper/expiry, and sold-out behavior.")
-input("> Continue… ")
-
-dea = AKC(); deanna_priv, deanna_pub = dea.private_key, dea.public_key
-will = AKC(); will_priv, will_pub   = will.private_key, will.public_key
-reg  = AKC(); reg_priv,  reg_pub    = reg.private_key,  reg.public_key
-wes  = AKC(); wes_priv,  wes_pub    = wes.private_key,  wes.public_key
-
-evt = Event(
-    name="Counseling Session",
-    description="Closed group.",
-    tickets=2,
-    start=time.time(),
-    finish=time.time() + 2_628_000,
-    restricted=True
-)
-
-# Create restricted event
-print("Deanna creates a restricted session; she admits people selectively.")
-req = auth_req(CreateRequest(event=evt), deanna_priv, deanna_pub, CreateRequest).model_dump()
-res = requests.post(SERVER_URL + "/create", json=req); rcreate = parse_res(res)
-show_req_res("Create Restricted Event (Deanna)", req, rcreate)
-counsel_id = rcreate["data"]["content"]["event_id"]
-
-# Cross-event misuse: try to use Tea Party ticket against Counseling event  [COVERAGE #7]
-print("Try to use a Tea Party ticket against the Counseling event — wrong event should fail.")
-req = auth_req(RedeemRequest(event_id=counsel_id, ticket=geordi_ticket),
-               geor_priv, geor_pub, RedeemRequest).model_dump()
-res = requests.post(SERVER_URL + "/redeem", json=req); cross_evt = parse_res(res)
-show_req_res("Redeem with ticket for different event — expect FAIL", req, cross_evt)
-
-# Replay same signed create — should fail (nonce replay)
-print("Exact replay of the signed create to confirm nonce replay protection.")
-res = requests.post(SERVER_URL + "/create", json=req); replay = parse_res(res)
-show_req_res("Replay same signed /create — FAIL", req, replay)
-
-# Expired timestamp
-print("Expired timestamp attempt to verify freshness enforcement.")
-req_stale = copy.deepcopy(req); req_stale["data"]["timestamp"] -= (TIMESTAMP_ERROR + 1)
-res = requests.post(SERVER_URL + "/create", json=req_stale); stale = parse_res(res)
-show_req_res("Expired timestamp /create — FAIL", req_stale, stale)
-
-# Tamper after signature
-print("Tampered payload (nonce changed after signing) to confirm signature binding.")
-req_tamper = copy.deepcopy(req); req_tamper["data"]["nonce"] = str(uuid.uuid4()); req_tamper["data"]["timestamp"] = time.time()
-res = requests.post(SERVER_URL + "/create", json=req_tamper); tamp = parse_res(res)
-show_req_res("Tampered /create — FAIL", req_tamper, tamp)
-
-# William tries to register without verification — fail
-print("William tries to register without a verification block to confirm restriction is enforced.")
-req = auth_req(RegisterRequest(event_id=counsel_id), will_priv, will_pub, RegisterRequest).model_dump()
-res = requests.post(SERVER_URL + "/register", json=req); w_fail = parse_res(res)
-show_req_res("Restricted register WITHOUT verification — FAIL (William)", req, w_fail)
-
-# Deanna creates a verification block for William; display note
-print("Deanna issues a verification block for William because she trusts his judgment.")
-v_will = auth_req(Verification(event_id=counsel_id, public_key=will_pub, metadata="approved"),
-                  deanna_priv, deanna_pub, Verification)
-print("REGISTRATION VERIFICATION BLOCK: signed by owner, authorizing registrant (omitted details).")
-
-# William registers with verification — success
-print("William registers with the owner’s verification, proving the allow-list works.")
-req = auth_req(RegisterRequest(event_id=counsel_id, verification=v_will),
-               will_priv, will_pub, RegisterRequest).model_dump()
-res = requests.post(SERVER_URL + "/register", json=req); w_ok = parse_res(res)
-show_req_res("Restricted register WITH verification — SUCCESS (William)", req, w_ok)
-will_ticket = w_ok["data"]["content"]["ticket"]
-
-# Spoofed VERIFICATION signature (should fail)
-print("An attacker spoofs the owner's signature on a verification block; registration must be rejected.")
-# Create a block with the correct shape (owner/William), but replace its signature with one from the wrong key
-v_template = v_will  # correct shape: owner authorizes William
-v_wrong_sig = auth_req(
-    Verification(event_id=counsel_id, public_key=will_pub, metadata="approved"),
-    rand_priv, rand_pub, Verification
-)
-
-v_spoof = v_template.model_dump()
-v_spoof["signature"] = v_wrong_sig.signature  # keep owner's public_key in the block, but wrong signature
-v_spoof["data"]["nonce"] = str(uuid.uuid4())
-v_spoof["data"]["timestamp"] = time.time()
-
-req = auth_req(
-    RegisterRequest(event_id=counsel_id, verification=v_spoof),
-    will_priv, will_pub, RegisterRequest
-).model_dump()
-res = requests.post(SERVER_URL + "/register", json=req)
-w_spoof = parse_res(res)
-show_req_res("Restricted register with SPOOFED owner signature — FAIL (William)", req, w_spoof)
-
-# Reginald tries using a block tied to William’s key — fail
-print("Reginald attempts to reuse a block tied to William’s key to confirm key-binding is honored.")
-v_wrong = auth_req(Verification(event_id=counsel_id, public_key=will_pub, metadata="wrong-key"),
-                   deanna_priv, deanna_pub, Verification)
-req = auth_req(RegisterRequest(event_id=counsel_id, verification=v_wrong),
-               reg_priv, reg_pub, RegisterRequest).model_dump()
-res = requests.post(SERVER_URL + "/register", json=req); rw = parse_res(res)
-show_req_res("Restricted register with WRONG-key verification — FAIL (Reginald)", req, rw)
-
-
-
-# Correct verification for Reginald — success
-print("Deanna issues a new verification block for Reginald that matches his key.")
-v_reg = auth_req(Verification(event_id=counsel_id, public_key=reg_pub),
-                 deanna_priv, deanna_pub, Verification)
-print("REGISTRATION VERIFICATION BLOCK: valid for Reginald (omitted details).")
-req = auth_req(RegisterRequest(event_id=counsel_id, verification=v_reg),
-               reg_priv, reg_pub, RegisterRequest).model_dump()
-res = requests.post(SERVER_URL + "/register", json=req); r_ok = parse_res(res)
-show_req_res("Restricted register WITH verification — SUCCESS (Reginald)", req, r_ok)
-reg_ticket = r_ok["data"]["content"]["ticket"]
-
-# Sold-out: Wesley has valid verification but event is full — should fail
-print("Wesley arrives late with a valid verification, but capacity is already reached.")
-v_wes = auth_req(Verification(event_id=counsel_id, public_key=wes_pub, metadata="ok"),
-                 deanna_priv, deanna_pub, Verification)
-print("REGISTRATION VERIFICATION BLOCK: valid for Wesley (omitted details).")
-req = auth_req(RegisterRequest(event_id=counsel_id, verification=v_wes),
-               wes_priv, wes_pub, RegisterRequest).model_dump()
-res = requests.post(SERVER_URL + "/register", json=req); wes_fail = parse_res(res)
-show_req_res("Restricted register SOLD OUT — FAIL (Wesley)", req, wes_fail)
-
-
-
-
-
-# Normal flow for both tickets: owner verify(no stamp) → holder redeem → owner stamp
-for who, w_priv, w_pub, ticket in [
-    ("Reginald", reg_priv, reg_pub, reg_ticket),
-    ("William",  will_priv, will_pub, will_ticket),
-]:
-    print(f"Owner verifies {who} without stamping (optional pre-check).")
-    req = auth_req(VerifyRequest(event_id=counsel_id, ticket=ticket, check_public_key=w_pub),
-                   deanna_priv, deanna_pub, VerifyRequest).model_dump()
-    res = requests.post(SERVER_URL + "/verify", json=req); pv = parse_res(res)
-    show_req_res(f"Owner Verify (no stamp) — {who}", req, pv)
-
-    print(f"{who} redeems their ticket; holder’s signature proves possession.")
-    req = auth_req(RedeemRequest(event_id=counsel_id, ticket=ticket),
-                   w_priv, w_pub, RedeemRequest).model_dump()
-    res = requests.post(SERVER_URL + "/redeem", json=req); red = parse_res(res)
-    show_req_res(f"Redeem — {who}", req, red)
-
-    print(f"Owner stamps {who}'s ticket after redemption; this prevents repeat use.")
-    req = auth_req(VerifyRequest(event_id=counsel_id, ticket=ticket, check_public_key=w_pub, stamp=True),
-                   deanna_priv, deanna_pub, VerifyRequest).model_dump()
-    res = requests.post(SERVER_URL + "/verify", json=req); st = parse_res(res)
-    show_req_res(f"Owner STAMP — {who}", req, st)
-
-    # Owner re-verify sees stamp
-    print(f"Owner re-verifies {who}'s ticket without stamping, confirming stamped state is recorded.")
-    req = auth_req(
-        VerifyRequest(event_id=counsel_id, ticket=ticket, check_public_key=w_pub, stamp=False),
-        deanna_priv, deanna_pub, VerifyRequest
-    ).model_dump()
-    res = requests.post(SERVER_URL + "/verify", json=req); vs_owner = parse_res(res)
-    show_req_res(f"Owner Verify AFTER Stamp (no-stamp flag) — {who}", req, vs_owner)
-
-    # Non-owner re-verify does NOT see stamp
-    print(f"A non-owner verifies {who}'s ticket and should NOT see stamped state.")
-    req = auth_req(
-        VerifyRequest(event_id=counsel_id, ticket=ticket, check_public_key=w_pub, stamp=False),
-        rand_priv, rand_pub, VerifyRequest
-    ).model_dump()
-    res = requests.post(SERVER_URL + "/verify", json=req); vs_non_owner = parse_res(res)
-    show_req_res(f"Non-owner Verify AFTER Stamp (no-stamp flag) — {who}", req, vs_non_owner)
-
-# Deletion behavior
-print("Deanna checks that the event exists by ID, then deletes it, then confirms it’s gone.")
-req = auth_req(SearchRequest(text=counsel_id, mode="id"),
-               deanna_priv, deanna_pub, SearchRequest).model_dump()
-res = requests.post(SERVER_URL + "/search", json=req); s1 = parse_res(res)
-show_req_res("Search by ID BEFORE delete (exists)", req, s1)
-
-req = auth_req(DeleteRequest(event_id=counsel_id),
-               deanna_priv, deanna_pub, DeleteRequest).model_dump()
-res = requests.post(SERVER_URL + "/delete", json=req); dd = parse_res(res)
-show_req_res("Delete event (Deanna)", req, dd)
-
-req = auth_req(SearchRequest(text=counsel_id, mode="id"),
-               deanna_priv, deanna_pub, SearchRequest).model_dump()
-res = requests.post(SERVER_URL + "/search", json=req); s2 = parse_res(res)
-show_req_res("Search by ID AFTER delete (gone)", req, s2)
-
-print("\nTHE END — Demo complete.\n")

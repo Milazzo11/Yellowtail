@@ -12,7 +12,7 @@ from typing import Self
 
 
 
-class Error(BaseModel):
+class ErrorResponse(BaseModel):
     """
     HTTP error response.
     """

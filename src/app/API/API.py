@@ -6,7 +6,7 @@ API request flows.
 
 
 
-from app.API.models.base import Auth, Error
+from app.API.models.base import Auth, ErrorResponse
 from app.API.models.endpoints import *
 from app.error.errors import DomainException
 
@@ -124,7 +124,7 @@ def delete_event(data: Auth[DeleteRequest]) -> Auth[DeleteResponse]:
     return Auth[DeleteResponse].load(response)
 
 
-def exception_handler(exception: DomainException) -> Auth[Error]:
+def exception_handler(exception: DomainException) -> Auth[ErrorResponse]:
     """
     Produce a signed error response.
 
@@ -132,6 +132,6 @@ def exception_handler(exception: DomainException) -> Auth[Error]:
     :return: server error response
     """
 
-    response = Error.generate(exception)
+    response = ErrorResponse.generate(exception)
 
-    return Auth[Error].load(response)
+    return Auth[ErrorResponse].load(response)

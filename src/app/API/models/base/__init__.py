@@ -7,4 +7,4 @@ API base models module.
 
 
 from .auth import Auth
-from .error import Error
+from .error import ErrorResponse
