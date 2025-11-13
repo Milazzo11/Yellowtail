@@ -154,6 +154,9 @@ class Ticket(BaseModel):
         try:
             event_key = Event.get_key(event_id)
 
+            if event_key is None:
+                raise DomainException(ErrorKind.NOT_FOUND, "event not found")
+
             b64_iv, ticket = ticket.split("-")
             cipher = SKC(key=event_key, iv=base64.b64decode(b64_iv))
         
@@ -172,13 +175,15 @@ class Ticket(BaseModel):
             # handle general decryption failure
             # (error message purposefully kept vague for security)
 
-        if ticket_data["event_id"] != event_id:
-            raise DomainException(ErrorKind.VALIDATION, "ticket for different event")
-            # ensure ticket event ID matches the event ID passed by client
-
         if ticket_data["public_key"] != public_key:
             raise DomainException(ErrorKind.VALIDATION, "ticket for different user")
             # ensure ticket public key matches key of client making request
+
+        if ticket_data["event_id"] != event_id:
+            raise DomainException(ErrorKind.VALIDATION, "ticket for different event")
+            # ensure ticket event ID matches the event ID passed by client
+            # (this error should not trigger unless the original server ticket issuance
+            # response was tampered with or compromised)
 
         cls._validate(
             event_id,

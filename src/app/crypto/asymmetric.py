@@ -83,13 +83,13 @@ class RSA:
             self._private_key = serialization.load_pem_private_key(
                 self.private_key, password=None, backend=default_backend()
             )
-            # initialize private key object for decryption
+            # initialize private key object for signing
 
         if self.public_key is not None:
             self._public_key = serialization.load_pem_public_key(
                 self.public_key, backend=default_backend()
             )
-            # initialize public key object for encryption
+            # initialize public key object for verification
 
 
     def _generate_key_pair(self, key_size: int) -> tuple:
