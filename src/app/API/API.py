@@ -12,20 +12,6 @@ from app.error.errors import DomainException
 
 
 
-def search_events(data: Auth[SearchRequest]) -> Auth[SearchResponse]:
-    """
-    /search request flow.
-
-    :param data: user request
-    :return: server response
-    """
-
-    request = data.authenticate()
-    response = SearchResponse.generate(request)
-
-    return Auth[SearchResponse].load(response)
-
-
 def create_event(data: Auth[CreateRequest]) -> Auth[CreateResponse]:
     """
     /create request flow.
@@ -38,6 +24,20 @@ def create_event(data: Auth[CreateRequest]) -> Auth[CreateResponse]:
     response = CreateResponse.generate(request, data.public_key)
     
     return Auth[CreateResponse].load(response)
+
+
+def search_events(data: Auth[SearchRequest]) -> Auth[SearchResponse]:
+    """
+    /search request flow.
+
+    :param data: user request
+    :return: server response
+    """
+
+    request = data.authenticate()
+    response = SearchResponse.generate(request)
+
+    return Auth[SearchResponse].load(response)
 
 
 def register_user(data: Auth[RegisterRequest]) -> Auth[RegisterResponse]:

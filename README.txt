@@ -26,6 +26,8 @@ API Endpoints:
 
 /cancel -- The cancel endpoint allows an event owner to invalidate a ticket.  Once canceled, the ticket can no longer be redeemed, stamped, or transferred.  Cancellation is final.
 
+/delete -- The delete endpoint allows an event owner to remove his event from the server.
+
 
 Every endpoint returns a signed response so the client cannot be fooled by network tampering or fake error messages.  If an action fails, the server signs the failure result as well.  Each request also includes a nonce and timestamp to block replay attacks.
 

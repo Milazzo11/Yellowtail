@@ -58,14 +58,14 @@ app = FastAPI(lifespan=lifespan)
 
 
 
-@app.post("/search", description="Search for events")
-async def search_events(data: Auth[SearchRequest]) -> Auth[SearchResponse]:
-    return API.search_events(data)
-
-
 @app.post("/create", description="Create a new event on the server")
 async def create_event(data: Auth[CreateRequest]) -> Auth[CreateResponse]:
     return API.create_event(data)
+
+
+@app.post("/search", description="Search for events")
+async def search_events(data: Auth[SearchRequest]) -> Auth[SearchResponse]:
+    return API.search_events(data)
 
 
 @app.post("/register", description="Register for an event and receieve a ticket")
