@@ -282,6 +282,9 @@ assert res.json()["data"]["content"]["redeemed"] == False, (
 assert res.json()["data"]["content"]["stamped"] is None, (
     f"{repr(res.json()["data"]["content"]["stamped"])} is not None"
 )
+assert res.json()["data"]["content"]["version"] == 2, (
+    f"{repr(res.json()["data"]["content"]["version"]) != 2}"
+)
 assert res.json()["data"]["content"]["metadata"] is None, (
     f"{repr(res.json()["data"]["content"]["metadata"])} is not None"
 )
@@ -425,6 +428,9 @@ assert res.json()["data"]["content"]["redeemed"] == True, (
 assert res.json()["data"]["content"]["stamped"] == True, (
     f"{repr(res.json()["data"]["content"]["stamped"])} != True"
 )
+assert res.json()["data"]["content"]["version"] == 2, (
+    f"{repr(res.json()["data"]["content"]["version"]) != 2}"
+)
 assert res.json()["data"]["content"]["metadata"] is None, (
     f"{repr(res.json()["data"]["content"]["metadata"])} is not None"
 )
@@ -476,6 +482,9 @@ assert res.json()["data"]["content"]["redeemed"] == True, (
 )
 assert res.json()["data"]["content"]["stamped"] is None, (
     f"{repr(res.json()["data"]["content"]["stamped"])} is not None"
+)
+assert res.json()["data"]["content"]["version"] == 2, (
+    f"{repr(res.json()["data"]["content"]["version"]) != 2}"
 )
 assert res.json()["data"]["content"]["metadata"] is None, (
     f"{repr(res.json()["data"]["content"]["metadata"])} is not None"
@@ -1025,6 +1034,9 @@ assert res.json()["data"]["content"]["redeemed"] == True, (
 )
 assert res.json()["data"]["content"]["stamped"] == True, (
     f"{repr(res.json()["data"]["content"]["stamped"])} != True"
+)
+assert res.json()["data"]["content"]["version"] == 1, (
+    f"{repr(res.json()["data"]["content"]["version"]) != 1}"
 )
 assert res.json()["data"]["content"]["metadata"] == "Imzadi <3", (
     f"{repr(res.json()["data"]["content"]["metadata"])} != 'Imzadi <3'"

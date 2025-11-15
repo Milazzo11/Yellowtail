@@ -40,6 +40,7 @@ class VerifyResponse(BaseModel):
         ...,
         description="If true, ticket is stamped (for event owner only)"
     )
+    version: int = Field(..., ge=1, le=64, description="Ticket transfer version")
     metadata: Optional[str] = Field(..., description="Ticket metadata")
 
 
@@ -70,8 +71,18 @@ class VerifyResponse(BaseModel):
             else:
                 redeemed, stamped = ticket.verify()
 
-            return cls(redeemed=redeemed, stamped=stamped, metadata=ticket.metadata)
+            return cls(
+                redeemed=redeemed,
+                stamped=stamped,
+                version=ticket.version + 1, # 1-indexed version
+                metadata=ticket.metadata
+            )
 
         redeemed, _ = ticket.verify()
 
-        return cls(redeemed=redeemed, stamped=None, metadata=ticket.metadata)
+        return cls(
+            redeemed=redeemed,
+            stamped=None,
+            version=ticket.version + 1, # 1-indexed version
+            metadata=ticket.metadata
+        )
