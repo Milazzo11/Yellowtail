@@ -47,6 +47,7 @@ class VerifyResponse(BaseModel):
         description="Ticket transfer version"
     )
     transfer_limit: int = Field(
+        ...,
         ge=0,
         le=TRANSFER_LIMIT,
         description="ticket transfer limit"
