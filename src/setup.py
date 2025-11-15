@@ -6,6 +6,7 @@ Setup and information module.
 
 
 
+from app.data.models.event import TRANSFER_LIMIT
 from app.util import display, keys
 from config import DATABASE_CREDS
 
@@ -56,7 +57,7 @@ def db_setup() -> None:
             conn.execute("DROP TABLE IF EXISTS events;")
 
             conn.execute(
-                """
+                f"""
                 CREATE TABLE IF NOT EXISTS events (
                     id TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
@@ -65,7 +66,11 @@ def db_setup() -> None:
                     issued INTEGER NOT NULL CHECK (issued >= 0),
                     start DOUBLE PRECISION NOT NULL,
                     finish DOUBLE PRECISION NOT NULL,
-                    restricted BOOLEAN NOT NULL
+                    restricted BOOLEAN NOT NULL,
+                    transfer_limit INTEGER NOT NULL CHECK (
+                        transfer_limit >= 0
+                        AND transfer_limit <= {TRANSFER_LIMIT}
+                    ),
                     CHECK (issued <= tickets)
                 );
                 """

@@ -6,7 +6,7 @@ Ticket data model.
 
 
 
-from .event import Event
+from .event import Event, TRANSFER_LIMIT
 from app.data.storage import ticket_store
 from app.crypto import hash
 from app.crypto.symmetric import SKC
@@ -19,15 +19,15 @@ from typing import Optional, Self
 
 
 
-REDEEMED_BYTE = 1 << 6
+REDEEMED_BYTE = TRANSFER_LIMIT + 1
 # redeemed byte value: 0b01000000
 
 
-STAMPED_BYTE = 1 << 7
+STAMPED_BYTE = REDEEMED_BYTE << 1
 # stamped byte value is: 0b10000000
 
 
-CANCELED_BYTE = (1 << 7) | (1 << 6)
+CANCELED_BYTE = STAMPED_BYTE | REDEEMED_BYTE
 # canceled byte value: 0b11000000
 
 
@@ -41,6 +41,7 @@ class Ticket(BaseModel):
     public_key: str
     number: int
     version: int
+    transfer_limit: int
     metadata: Optional[str]
     event_key: bytes
 
@@ -65,7 +66,7 @@ class Ticket(BaseModel):
             # check if the ticket has been canceled
             # (a ticket is canceled if the first 2 bits are on)
 
-        if not ((byte & (REDEEMED_BYTE - 1)) == version):
+        if not ((byte & TRANSFER_LIMIT) == version):
             raise DomainException(ErrorKind.CONFLICT, "ticket superseded")
             # check if the ticket version is up to date
             # (a ticket version is valid if the low 6 bits match the expected version)
@@ -76,6 +77,7 @@ class Ticket(BaseModel):
         cls,
         event_id: str,
         public_key: str,
+        transfer_limit: int,
         metadata: Optional[str] = None
     ) -> Self:
         """
@@ -97,6 +99,7 @@ class Ticket(BaseModel):
             public_key=public_key,
             number=number,
             version=0,
+            transfer_limit=transfer_limit,
             metadata=metadata,
             event_key=Event.get_key(event_id)
         )
@@ -109,6 +112,7 @@ class Ticket(BaseModel):
         public_key: str,
         number: int,
         version: int,
+        transfer_limit: int,
         metadata: Optional[str] = None
     ) -> Self:
         """
@@ -122,7 +126,7 @@ class Ticket(BaseModel):
         :return: ticket model
         """
 
-        if version == REDEEMED_BYTE - 1:
+        if version == transfer_limit:
             raise DomainException(ErrorKind.CONFLICT, "ticket transfer limit reached")
             # tickets with version 0b00111111 can no longer be transferred
             # (version data is maxed out)
@@ -135,6 +139,7 @@ class Ticket(BaseModel):
             public_key=public_key,
             number=number,
             version=version + 1,
+            transfer_limit=transfer_limit,
             metadata=metadata,
             event_key=Event.get_key(event_id)
         )
@@ -196,6 +201,7 @@ class Ticket(BaseModel):
             public_key=public_key,
             number=ticket_data["number"],
             version=ticket_data["version"],
+            transfer_limit=ticket_data["transfer_limit"],
             metadata=ticket_data["metadata"],
             event_key=event_key
         )
@@ -245,7 +251,7 @@ class Ticket(BaseModel):
             raise DomainException(ErrorKind.NOT_FOUND, "ticket canceled")
         
         return byte >= REDEEMED_BYTE, byte >= STAMPED_BYTE
-    
+
 
     def stamp(self) -> tuple[bool, bool]:
         """
@@ -285,6 +291,7 @@ class Ticket(BaseModel):
             "public_key": self.public_key,
             "number": self.number,
             "version": self.version,
+            "transfer_limit": self.transfer_limit,
             "metadata": self.metadata
         }
 

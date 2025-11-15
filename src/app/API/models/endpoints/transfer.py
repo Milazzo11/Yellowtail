@@ -81,8 +81,12 @@ class TransferResponse(BaseModel):
         )
         
         new_ticket = Ticket.reissue(
-            request.event_id, public_key, number=old_ticket.number,
-            version=old_ticket.version, metadata=old_ticket.metadata
+            request.event_id,
+            public_key,
+            old_ticket.number,
+            old_ticket.version,
+            old_ticket.transfer_limit,
+            old_ticket.metadata
         )
         ticket = new_ticket.pack()
 

@@ -27,7 +27,7 @@ def load_event(event_id: str) -> Optional[dict]:
             cur.execute("SELECT * FROM events WHERE id = %s;", (event_id,))
             row = cur.fetchone()
 
-            return dict(row) if row else None
+    return dict(row) if row else None
 
 
 def load_event_key(event_id: str) -> Optional[bytes]:
@@ -47,11 +47,8 @@ def load_event_key(event_id: str) -> Optional[bytes]:
                 (event_id,)
             )
             row = cur.fetchone()
-
-            if not row or row["event_key"] is None:
-                return None
-
-            return bytes(row["event_key"])
+        
+    return None if row is None else bytes(row["event_key"])
 
 
 def load_owner_public_key(event_id: str) -> Optional[str]:
@@ -72,10 +69,7 @@ def load_owner_public_key(event_id: str) -> Optional[str]:
             )
             row = cur.fetchone()
 
-            if not row or row["owner_public_key"] is None:
-                return None
-
-            return str(row["owner_public_key"])
+    return None if row is None else str(row["owner_public_key"])
 
 
 def search(text: str, limit: int) -> list[dict]:
@@ -98,7 +92,7 @@ def search(text: str, limit: int) -> list[dict]:
             )
             rows = cur.fetchall()
 
-            return list(rows)
+    return list(rows)
 
 
 def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
@@ -125,7 +119,8 @@ def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
                     issued,
                     start,
                     finish,
-                    restricted
+                    restricted,
+                    transfer_limit
                 )
                 VALUES (
                     %(id)s,
@@ -135,7 +130,8 @@ def create(event: dict, event_key: bytes, owner_public_key: str) -> None:
                     %(issued)s,
                     %(start)s,
                     %(finish)s,
-                    %(restricted)s
+                    %(restricted)s,
+                    %(transfer_limit)s
                 );
                 """,
                 event

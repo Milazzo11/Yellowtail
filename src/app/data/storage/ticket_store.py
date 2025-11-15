@@ -35,11 +35,8 @@ def issue(event_id: str) -> Optional[int]:
                 (event_id,)
             )
             row = cur.fetchone()
-
-            if not row or row["issued"] is None:
-                return None
-
-            return int(row["issued"]) - 1
+        
+    return None if row is None else int(row["issued"]) - 1
 
 
 def reissue(event_id: str, ticket_number: int, version: int) -> bool:
@@ -120,7 +117,4 @@ def load_state_byte(event_id: str, ticket_number: int) -> Optional[int]:
             )
             row = cur.fetchone()
 
-    if not row or row["state_byte"] is None:
-        return None
-
-    return int(row["state_byte"])
+    return None if row is None else int(row["state_byte"])

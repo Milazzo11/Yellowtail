@@ -17,6 +17,12 @@ from typing import Self
 
 
 
+TRANSFER_LIMIT = 1 << 6 - 1
+# transfer limit value: 0b00111111
+# (transfer version data stored in low 6 bits)
+
+
+
 class Event(BaseModel):
     """
     Public-facing event data model.
@@ -38,6 +44,12 @@ class Event(BaseModel):
     restricted: bool = Field(
         False,
         description="Specifies whether event is open or restricted (requires authorization)"
+    )
+    transfer_limit: int = Field(
+        TRANSFER_LIMIT,
+        ge=0,
+        le=TRANSFER_LIMIT,
+        description="Maximum number of allowed ticket transfers"
     )
 
 

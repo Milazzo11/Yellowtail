@@ -7,7 +7,7 @@
 
 
 from app.API.models.base import Auth
-from app.data.models.event import Event
+from app.data.models.event import Event, TRANSFER_LIMIT
 from app.data.models.ticket import Ticket
 from app.error.errors import ErrorKind, DomainException
 
@@ -23,6 +23,12 @@ class Verification(BaseModel):
 
     event_id: str = Field(..., description="ID of the event to register for")
     public_key: str = Field(..., description="Public key of the registering user")
+    transfer_limit: Optional[int] = Field(
+        None,
+        ge=0,
+        le=TRANSFER_LIMIT,
+        description="Custom ticket transfer limit"
+    )
     metadata: Optional[str] = Field(None, description="Custom ticket metadata")
 
 
@@ -59,7 +65,9 @@ class RegisterResponse(BaseModel):
         """
 
         event = Event.load(request.event_id)
+
         metadata = None
+        transfer_limit = event.transfer_limit
 
         if event.restricted:
             if request.verification is None:
@@ -92,8 +100,11 @@ class RegisterResponse(BaseModel):
             # authenticate verification block
 
             metadata = verif_data.metadata
+
+            if verif_data.transfer_limit is not None:
+                transfer_limit = verif_data.transfer_limit
             
-        ticket = Ticket.register(request.event_id, public_key, metadata=metadata)
+        ticket = Ticket.register(request.event_id, public_key, transfer_limit, metadata)
         ticket = ticket.pack()
 
         return cls(ticket=ticket)
