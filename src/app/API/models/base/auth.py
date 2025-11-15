@@ -32,7 +32,7 @@ SERVICE_STARTED = False
 
 
 REDIS = None
-# Redis connection
+# Redis client
 
 
 STATE_CLEANUP_INTERVAL = 10
