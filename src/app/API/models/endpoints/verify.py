@@ -64,9 +64,7 @@ class VerifyResponse(BaseModel):
         :return: server response
         """
 
-        owner_public_key = None
         is_event_owner = False
-        is_ticket_holder = (request.check_public_key == public_key)
 
         if request.stamp:
             owner_public_key = Event.get_owner_public_key(request.event_id)
@@ -89,6 +87,8 @@ class VerifyResponse(BaseModel):
             redeemed, stamped = ticket.stamp()
         else:
             redeemed, stamped = ticket.verify()
+
+        is_ticket_holder = (request.check_public_key == public_key)
 
         if not (is_ticket_holder or is_event_owner):
             stamped = None
