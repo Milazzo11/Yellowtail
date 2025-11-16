@@ -1195,6 +1195,41 @@ assert res.json()["data"]["content"]["metadata"] == "Imzadi <3", (
 ##########
 
 print(
+    "Deanna wants to see her ticket state data again and asks William to " \
+    "make another verify request to show her (no stamp)."
+)
+
+req = Auth[VerifyRequest].load(
+    VerifyRequest(
+        event_id=event_id_2,
+        ticket=deanna_ticket,
+        check_public_key=deanna.public_key
+    ),
+    william.private_key,
+    william.public_key
+)
+res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
+output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["redeemed"] == True, (
+    f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
+)
+assert res.json()["data"]["content"]["stamped"] == True, (
+    f"{repr(res.json()["data"]["content"]["stamped"])} != True"
+)
+assert res.json()["data"]["content"]["version"] == 1, (
+    f"{repr(res.json()["data"]["content"]["version"]) != 1}"
+)
+assert res.json()["data"]["content"]["transfer_limit"] == 0, (
+    f"{repr(res.json()["data"]["content"]["transfer_limit"]) != 0}"
+)
+assert res.json()["data"]["content"]["metadata"] == "Imzadi <3", (
+    f"{repr(res.json()["data"]["content"]["metadata"])} != 'Imzadi <3'"
+)
+
+##########
+
+print(
     "But, oh no... Jean-Luc just called William to deal with an impending " \
     "emergency, and he has to cancel his event.  He quickly makes the " \
     "deletion request before heading off to handle the problem."

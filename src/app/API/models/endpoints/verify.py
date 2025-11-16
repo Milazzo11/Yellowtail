@@ -65,12 +65,13 @@ class VerifyResponse(BaseModel):
         """
 
         is_event_owner = False
+        is_ticket_holder = (request.check_public_key == public_key)
 
-        if request.stamp:
+        if not is_ticket_holder or request.stamp:
             owner_public_key = Event.get_owner_public_key(request.event_id)
             is_event_owner = (public_key == owner_public_key)
-                
-            if not is_event_owner:
+            
+            if request.stamp and not is_event_owner:
                 raise DomainException(
                     ErrorKind.PERMISSION,
                     "only event owners may stamp tickets",
@@ -87,8 +88,6 @@ class VerifyResponse(BaseModel):
             redeemed, stamped = ticket.stamp()
         else:
             redeemed, stamped = ticket.verify()
-
-        is_ticket_holder = (request.check_public_key == public_key)
 
         if not (is_ticket_holder or is_event_owner):
             stamped = None
