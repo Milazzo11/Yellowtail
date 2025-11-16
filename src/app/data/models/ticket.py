@@ -15,7 +15,7 @@ from app.error.errors import DomainException, ErrorKind
 import base64
 import json
 from pydantic import BaseModel
-from typing import Optional, Self
+from typing import Optional, Self, Union
 
 
 
@@ -42,7 +42,7 @@ class Ticket(BaseModel):
     number: int
     version: int
     transfer_limit: int
-    metadata: Optional[str]
+    metadata: Optional[Union[dict, str]]
     event_key: bytes
 
 
@@ -78,7 +78,7 @@ class Ticket(BaseModel):
         event_id: str,
         public_key: str,
         transfer_limit: int,
-        metadata: Optional[str] = None
+        metadata: Optional[Union[dict, str]]
     ) -> Self:
         """
         Register a new user for an event to receieve a ticket.
@@ -113,7 +113,7 @@ class Ticket(BaseModel):
         number: int,
         version: int,
         transfer_limit: int,
-        metadata: Optional[str] = None
+        metadata: Optional[Union[dict, str]]
     ) -> Self:
         """
         Reissue a ticket to complete a transfer from one user to another.

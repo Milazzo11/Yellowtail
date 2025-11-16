@@ -12,7 +12,7 @@ from app.data.models.ticket import Ticket
 from app.error.errors import ErrorKind, DomainException
 
 from pydantic import BaseModel, Field
-from typing import Optional, Self
+from typing import Optional, Self, Union
 
 
 
@@ -29,7 +29,10 @@ class Verification(BaseModel):
         le=TRANSFER_LIMIT,
         description="Custom ticket transfer limit"
     )
-    metadata: Optional[str] = Field(None, description="Custom ticket metadata")
+    metadata: Optional[Union[dict, str]] = Field(
+        None,
+        description="Custom ticket metadata"
+    )
 
 
 
@@ -66,19 +69,13 @@ class RegisterResponse(BaseModel):
 
         event = Event.load(request.event_id)
 
-        metadata = None
         transfer_limit = event.transfer_limit
+        metadata = None
 
         if event.restricted:
             if request.verification is None:
                 raise DomainException(ErrorKind.PERMISSION, "verification required")
                 # confirm verification provided
-
-            owner_public_key = Event.get_owner_public_key(request.event_id)
-
-            if request.verification.public_key != owner_public_key:
-                raise DomainException(ErrorKind.PERMISSION, "unauthorized signer")
-                # confirm verification is signed by the event owner
             
             verif_data = request.verification.unwrap()
 
@@ -96,14 +93,20 @@ class RegisterResponse(BaseModel):
                 )
                 # confirm verification is for the requesting user
 
+            owner_public_key = Event.get_owner_public_key(request.event_id)
+
+            if request.verification.public_key != owner_public_key:
+                raise DomainException(ErrorKind.PERMISSION, "unauthorized signer")
+                # confirm verification is signed by the event owner
+
             request.verification.authenticate()
             # authenticate verification block
 
-            metadata = verif_data.metadata
-
             if verif_data.transfer_limit is not None:
                 transfer_limit = verif_data.transfer_limit
-            
+
+            metadata = verif_data.metadata
+        
         ticket = Ticket.register(request.event_id, public_key, transfer_limit, metadata)
         ticket = ticket.pack()
 

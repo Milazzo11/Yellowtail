@@ -11,7 +11,7 @@ from app.data.models.ticket import Ticket
 from app.error.errors import ErrorKind, DomainException
 
 from pydantic import BaseModel, Field
-from typing import Optional, Self
+from typing import Optional, Self, Union
 
 
 
@@ -52,7 +52,7 @@ class VerifyResponse(BaseModel):
         le=TRANSFER_LIMIT,
         description="ticket transfer limit"
     )
-    metadata: Optional[str] = Field(..., description="Ticket metadata")
+    metadata: Optional[Union[dict, str]] = Field(..., description="Ticket metadata")
 
 
     @classmethod
@@ -64,38 +64,39 @@ class VerifyResponse(BaseModel):
         :return: server response
         """
 
-        owner_public_key = Event.get_owner_public_key(request.event_id)
-        is_event_owner = (public_key == owner_public_key)
+        owner_public_key = None
+        is_event_owner = False
+        is_ticket_holder = (request.check_public_key == public_key)
 
-        if not is_event_owner and request.stamp:
-            raise DomainException(
-                ErrorKind.PERMISSION,
-                "only event owners may stamp tickets"
-            )
-            # ensure that any ticket stamp attempts come from the event owner
+        if request.stamp:
+            owner_public_key = Event.get_owner_public_key(request.event_id)
+            is_event_owner = (public_key == owner_public_key)
+                
+            if not is_event_owner:
+                raise DomainException(
+                    ErrorKind.PERMISSION,
+                    "only event owners may stamp tickets",
+                )
+                # ensure that any ticket stamp attempts come from the event owner
 
-        ticket = Ticket.load(request.event_id, request.check_public_key, request.ticket)
+        ticket = Ticket.load(
+            request.event_id,
+            request.check_public_key,
+            request.ticket,
+        )
 
-        if is_event_owner:
-            if request.stamp:
-                redeemed, stamped = ticket.stamp()
-            else:
-                redeemed, stamped = ticket.verify()
+        if request.stamp:
+            redeemed, stamped = ticket.stamp()
+        else:
+            redeemed, stamped = ticket.verify()
 
-            return cls(
-                redeemed=redeemed,
-                stamped=stamped,
-                version=ticket.version + 1, # 1-indexed version
-                transfer_limit=ticket.transfer_limit,
-                metadata=ticket.metadata
-            )
-
-        redeemed, _ = ticket.verify()
+        if not (is_ticket_holder or is_event_owner):
+            stamped = None
 
         return cls(
             redeemed=redeemed,
-            stamped=None,
-            version=ticket.version + 1, # 1-indexed version
+            stamped=stamped,
+            version=ticket.version + 1,  # 1-indexed version
             transfer_limit=ticket.transfer_limit,
-            metadata=ticket.metadata
+            metadata=ticket.metadata,
         )

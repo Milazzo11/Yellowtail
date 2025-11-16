@@ -986,7 +986,11 @@ req = Auth[RegisterRequest].load(
         verification=Auth[Verification].load(
             Verification(
                 event_id=event_id_2,
-                public_key=beverly.public_key
+                public_key=beverly.public_key,
+                metadata={
+                    "mission": "to boldy go where no man has gone before",
+                    "duration": 5
+                }
             ),
             william.private_key,
             william.public_key
@@ -1001,7 +1005,47 @@ output(req, Auth[RegisterResponse](**res.json()), res.status_code, 200)
 beverly_ticket = res.json()["data"]["content"]["ticket"]
 assert beverly_ticket is not None, "None is None"
 
-#######
+##########
+
+print(
+    "Beverly forgot the metadata that William injected into her ticket, so " \
+    "she makes a /verify request to confirm it."
+)
+
+req = Auth[VerifyRequest].load(
+    VerifyRequest(
+        event_id=event_id_2,
+        ticket=beverly_ticket,
+        check_public_key=beverly.public_key,
+    ),
+    beverly.private_key,
+    beverly.public_key
+)
+res = requests.post(SERVER_URL + "/verify", json=req.model_dump())
+output(req, Auth[VerifyResponse](**res.json()), res.status_code, 200)
+
+assert res.json()["data"]["content"]["redeemed"] == False, (
+    f"{repr(res.json()["data"]["content"]["redeemed"])} != True"
+)
+assert res.json()["data"]["content"]["stamped"] == False, (
+    f"{repr(res.json()["data"]["content"]["stamped"])} != True"
+)
+assert res.json()["data"]["content"]["version"] == 1, (
+    f"{repr(res.json()["data"]["content"]["version"]) != 1}"
+)
+assert res.json()["data"]["content"]["transfer_limit"] == 1, (
+    f"{repr(res.json()["data"]["content"]["transfer_limit"]) != 1}"
+)
+assert res.json()["data"]["content"]["metadata"] == {
+    "mission": "to boldy go where no man has gone before",
+    "duration": 5
+}, (
+    repr(res.json()["data"]["content"]["metadata"]) + " != {" \
+    '"mission": "to boldy go where no man has gone before", ' \
+    '"duration": 5}'
+)
+
+##########
 
 print(
     "Beverly realizes that her son is on the loose causing mayhem again, " \
